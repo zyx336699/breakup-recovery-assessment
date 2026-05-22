@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+test-results/
+playwright-report/
+screenshots/
+data/
+deploy-package/
+book33.pdf
+book33_extracted.txt
+cloudflared*.log
+localtunnel*.log
+*.err.log
+npm-debug.log*
+.DS_Store

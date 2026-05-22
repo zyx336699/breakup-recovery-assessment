@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分手挽回自测评估系统</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">被分手者挽回评估工具</p>
+        <h1>分手挽回自测评估系统</h1>
+        <p class="intro">专门给被分手后还想挽回的人使用：先判断关系窗口、对方防御程度、你现在最该做什么，再给出下一步行动和避坑提醒。</p>
+      </div>
+      <div class="hero-panel">
+        <span class="panel-label">当前测评</span>
+        <strong id="liveScore">未开始</strong>
+        <small>分手不是终局。测评的目的不是判死刑，而是找到当前最有希望的切入点。</small>
+      </div>
+    </section>
+
+    <section class="notice">
+      <strong>系统态度：</strong>
+      从理论上说，绝大多数分手都存在重新连接的可能；区别只在于窗口大小、切入时机、对方防御程度和你的执行方式。即使当前窗口很低，也不代表永远没机会，只代表现在不能硬冲。
+    </section>
+
+    <section class="process-band">
+      <div><strong>1</strong><span>填写关系画像</span></div>
+      <div><strong>2</strong><span>识别分手类型</span></div>
+      <div><strong>3</strong><span>生成挽回报告</span></div>
+      <div><strong>4</strong><span>截图发给老师</span></div>
+    </section>
+
+    <form id="assessment" class="grid">
+      <section class="section-block">
+        <h2>一、基础画像</h2>
+        <label>
+          你的性别
+          <select name="userGender">
+            <option value="female">女生</option>
+            <option value="male">男生</option>
+            <option value="other">其他/不方便说明</option>
+          </select>
+        </label>
+        <label>
+          对方性别
+          <select name="targetGender">
+            <option value="male">男生</option>
+            <option value="female">女生</option>
+            <option value="other">其他/不方便说明</option>
+          </select>
+        </label>
+        <label>
+          你的年龄段
+          <select name="age">
+            <option value="under22">22岁以下：情绪浓度高，关系经验还在建立</option>
+            <option value="23-27">23-27岁：恋爱与自我发展并行，容易卡在安全感和未来感</option>
+            <option value="28-34">28-34岁：婚恋压力、现实规划、家庭意见影响更大</option>
+            <option value="35plus">35岁以上：关系成本、婚姻/孩子/财务议题更复杂</option>
+          </select>
+        </label>
+        <label>
+          你们的关系阶段
+          <select name="relationshipStage">
+            <option value="5">谈婚论嫁/同居/见过父母，现实绑定较深</option>
+            <option value="4">稳定恋爱，双方朋友或家人知道关系</option>
+            <option value="3">普通恋爱，感情有浓度但现实绑定不深</option>
+            <option value="2">暧昧/短择/刚确定关系不久，关系定义不够稳</option>
+            <option value="1">网恋/异地刚见面不多，更多靠线上情绪维系</option>
+          </select>
+        </label>
+        <label>
+          这次分手是谁先提的
+          <select name="proposer">
+            <option value="2">对方明确提出分手，我是被分手的一方</option>
+            <option value="4">争吵中双方都提过，情绪成分很重</option>
+            <option value="3">我先提分手/冷处理，但对方接受后我后悔</option>
+            <option value="2">对方长期冷淡，我被逼到先提分手</option>
+            <option value="2">没有明确仪式，是慢慢淡掉/默认结束</option>
+          </select>
+        </label>
+        <label>
+          这是第几次分手
+          <select name="breakupCount">
+            <option value="4">第一次正式分手，过去没有反复分合</option>
+            <option value="3">第二次分手，之前复合过一次</option>
+            <option value="2">三次以内反复分合，问题还没完全固化</option>
+            <option value="1">多次分分合合，对方已经对承诺和道歉免疫</option>
+            <option value="1">长期拉扯，分手像常规威胁或常规逃避</option>
+          </select>
+        </label>
+        <label>
+          现实绑定程度
+          <select name="livingBinding">
+            <option value="4">已婚/有孩子/共同财务，现实绑定很深</option>
+            <option value="4">同居或半同居，生活习惯深度交织</option>
+            <option value="3">见过父母/谈婚论嫁/共同规划过未来</option>
+            <option value="2">普通恋爱，没有太多现实绑定</option>
+            <option value="1">地下恋/短择/关系身份不稳定，承诺基础弱</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="section-block">
+        <h2>二、关系基础</h2>
+        <label>
+          交往时长
+          <select name="duration">
+            <option value="5">5年以上/谈婚论嫁/共同生活很深，彼此已经像家人</option>
+            <option value="4">3年以上，彼此生活高度交织</option>
+            <option value="3">1-3年，有较多共同经历</option>
+            <option value="2">3-12个月，关系基础中等</option>
+            <option value="1">3个月内，关系仍较浅</option>
+            <option value="2">暧昧或短择转正失败，但情绪投入很重</option>
+          </select>
+        </label>
+        <label>
+          分手前总体关系质量
+          <select name="quality">
+            <option value="4">大多数时间稳定，近期矛盾集中爆发</option>
+            <option value="4">感情浓度高，只是近期压力、误会或争吵让关系失控</option>
+            <option value="3">有感情基础，但反复争吵或冷战</option>
+            <option value="3">对方说过累、失望、看不到未来，但并不是完全没感情</option>
+            <option value="2">长期消耗，快乐明显少于痛苦</option>
+            <option value="1">多次分分合合，对方已经对承诺免疫</option>
+            <option value="0">存在伤害、操控或严重不平等</option>
+          </select>
+        </label>
+        <label>
+          分手原因
+          <select name="cause">
+            <option value="4">冲动型争吵、误会、压力下情绪化决定</option>
+            <option value="3">沟通方式、忽视、陪伴不足、边界不清</option>
+            <option value="3">对方说“太累了”“没感觉了”“我们不合适”</option>
+            <option value="3">你太黏、太作、太焦虑，对方被压力推开</option>
+            <option value="2">现实压力：异地、工作、家庭、经济、结婚节奏</option>
+            <option value="2">价值观、未来规划、异地、家庭阻力</option>
+            <option value="1">信任受损：隐瞒、欺骗、暧昧、边界感问题</option>
+            <option value="0">出轨、欺骗、暴力、严重羞辱或长期控制</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="section-block">
+        <h2>三、对方信号</h2>
+        <label>
+          对方目前态度
+          <select name="attitude">
+            <option value="5">还会关心你、吃醋、试探，嘴上说分开但情绪还在</option>
+            <option value="4">愿意平静沟通，偶尔主动联系</option>
+            <option value="3">会回复，但明显保持距离</option>
+            <option value="2">只回复必要信息，不主动，不接情绪话题</option>
+            <option value="2">冷淡、回避，不愿谈关系</option>
+            <option value="1">说“我们不可能了”，但还没有彻底断联</option>
+            <option value="0">明确拒绝、拉黑、要求不要再联系</option>
+          </select>
+        </label>
+        <label>
+          对方是否已经有新关系
+          <select name="newPartner">
+            <option value="4">没有明显新关系</option>
+            <option value="3">有异性接触，但更像转移注意力或情绪寄托</option>
+            <option value="2">可能暧昧或刚开始接触别人</option>
+            <option value="1">已经稳定进入新关系</option>
+            <option value="0">分手前后涉及第三方伤害</option>
+          </select>
+        </label>
+        <label>
+          共同生活/社交连接
+          <select name="connection">
+            <option value="4">有共同事务、朋友或现实交集，互动可自然发生</option>
+            <option value="3">还有联系方式，但交集不多</option>
+            <option value="3">朋友圈/社交平台还互相可见，偶尔会看动态</option>
+            <option value="2">几乎只有线上联系</option>
+            <option value="1">被删除/拉黑一部分渠道，但还有间接连接</option>
+            <option value="1">完全断开，任何联系都显得突兀</option>
+          </select>
+        </label>
+        <label>
+          分手后是否见过面
+          <select name="offlineMeet">
+            <option value="4">见过，氛围还算平静，对方没有明显排斥</option>
+            <option value="3">见过，但主要聊事务，没有深入谈感情</option>
+            <option value="2">没见过，但对方没有明确拒绝未来见面</option>
+            <option value="1">对方明确拒绝见面，或者一提见面就防御</option>
+            <option value="0">见面时发生严重争吵、堵人、失控或恐惧</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="section-block">
+        <h2>四、你的状态</h2>
+        <label>
+          分手后你的行为
+          <select name="behavior">
+            <option value="4">尊重边界，能控制联系频率</option>
+            <option value="3">偶尔解释或求和，但能及时停下</option>
+            <option value="2">发过小作文、道歉、送礼物，但次数不算失控</option>
+            <option value="1">频繁发消息、求证明、情绪拉扯</option>
+            <option value="0">找过朋友劝、去过对方楼下/公司/学校，已经让对方有压力</option>
+            <option value="-2">威胁、自伤要挟、堵人、找亲友施压</option>
+          </select>
+        </label>
+        <label>
+          情绪稳定度
+          <select name="stability">
+            <option value="4">能睡眠、工作/学习，能复盘问题</option>
+            <option value="3">难过但基本能生活</option>
+            <option value="2">白天能撑住，晚上容易崩溃、反复想发消息</option>
+            <option value="1">明显失控、反复冲动联系</option>
+            <option value="-2">有自伤念头、报复念头或无法维持日常</option>
+          </select>
+        </label>
+        <label>
+          你是否愿意做长期改变
+          <select name="change">
+            <option value="4">能说清自己要改什么，并愿意用行动验证</option>
+            <option value="3">知道大方向，但计划还不清晰</option>
+            <option value="2">知道自己有问题，但还容易把重点放在对方为什么绝情</option>
+            <option value="1">主要想让对方回来，暂时没想修复根因</option>
+            <option value="0">希望靠话术、刺激嫉妒或施压达成复合</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="section-block">
+        <h2>五、时机与沟通</h2>
+        <label>
+          距离分手时间
+          <select name="time">
+            <option value="2">刚分手 72 小时内，情绪很热，任何话都容易变形</option>
+            <option value="3">3-21天，情绪仍热但可冷却</option>
+            <option value="4">3周-3个月，适合低压复联与验证改变</option>
+            <option value="2">3-6个月，窗口仍可能存在但需更自然</option>
+            <option value="1">6个月以上，更多取决于新生活状态</option>
+          </select>
+        </label>
+        <label>
+          核心问题是否可解决
+          <select name="solvability">
+            <option value="4">具体、可沟通、可验证</option>
+            <option value="3">困难但双方曾表达过愿意调整</option>
+            <option value="2">问题能说清，但过去没有真正执行过改变</option>
+            <option value="1">长期重复，过去多次承诺无效</option>
+            <option value="0">触及不可接受底线或人生方向冲突</option>
+          </select>
+        </label>
+        <label>
+          最近一次沟通氛围
+          <select name="lastTalk">
+            <option value="4">能听完彼此，虽难过但不攻击</option>
+            <option value="3">有争执，但仍能收住</option>
+            <option value="2">你想谈感情，对方明显逃避或敷衍</option>
+            <option value="1">互相指责、防御、冷暴力</option>
+            <option value="0">升级为威胁、辱骂、恐惧或拉黑</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="section-block full">
+        <h2>六、被分手后的真实处境</h2>
+        <div class="grid compact-grid">
+          <label>
+            对方最后一次表达最像哪一句
+            <select name="lastWords">
+              <option value="4">“我也舍不得，但真的太累了”</option>
+              <option value="4">“先冷静一段时间吧”</option>
+              <option value="3">“你很好，只是我们不合适”</option>
+              <option value="3">“我现在不想谈恋爱/不想被关系消耗”</option>
+              <option value="2">“别再说了，我不想聊这个”</option>
+              <option value="1">“我们不可能了，你别等我”</option>
+              <option value="0">“你再联系我，我会更讨厌你/报警/拉黑全部”</option>
+            </select>
+          </label>
+          <label>
+            你现在最强的冲动
+            <select name="impulse">
+              <option value="4">想先冷静变好，再找合适机会沟通</option>
+              <option value="3">想解释清楚误会，但能控制节奏</option>
+              <option value="2">想马上发消息确认对方还爱不爱</option>
+              <option value="1">想去见对方、送东西、找朋友帮忙劝</option>
+              <option value="0">想用极端方式让对方心软或后悔</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          简单描述你们的情况，AI 深度分析会用到
+          <textarea name="story" rows="5" placeholder="例如：在一起多久，谁提的分手，对方原话是什么，你分手后做了什么，现在是否还能联系，最想解决的问题是什么。"></textarea>
+        </label>
+      </section>
+
+      <section class="section-block full">
+        <h2>七、关键细分场景</h2>
+        <div class="grid compact-grid">
+          <label>
+            分手更像哪一种
+            <select name="breakupType">
+              <option value="4">冲动爆发型：吵架、误会、情绪上头后提出</option>
+              <option value="3">失望累积型：对方忍了很久，最后说太累了</option>
+              <option value="3">感觉下降型：对方说没感觉、不心动、不想谈</option>
+              <option value="2">现实阻力型：异地、父母、经济、结婚节奏、工作压力</option>
+              <option value="2">信任破裂型：隐瞒、暧昧、边界、欺骗造成防御</option>
+              <option value="1">价值错位型：人生规划、婚育观、消费观、亲密需求差异大</option>
+            </select>
+          </label>
+          <label>
+            当前联系方式状态
+            <select name="contactStatus">
+              <option value="5">能正常聊天，对方偶尔也会主动</option>
+              <option value="4">能联系，但对方明显降温、回复变慢</option>
+              <option value="3">只聊必要事务，不愿聊感情</option>
+              <option value="2">被删除/拉黑一部分渠道，还有其他方式能联系</option>
+              <option value="1">全面拉黑或断联，只能通过共同朋友/现实交集间接触达</option>
+            </select>
+          </label>
+          <label>
+            你们最常见的冲突模式
+            <select name="conflictPattern">
+              <option value="4">能吵但能收住，事后还能解释和修复</option>
+              <option value="3">你追问解释，对方沉默逃避</option>
+              <option value="2">一方指责翻旧账，另一方防御反击</option>
+              <option value="1">长期冷战、拉黑、分手威胁、互相消耗</option>
+              <option value="0">羞辱、贬低、控制、威胁、恐惧感明显</option>
+            </select>
+          </label>
+          <label>
+            你的情绪/依恋模式更像
+            <select name="attachmentMode">
+              <option value="4">难受但能自我安抚，愿意按节奏来</option>
+              <option value="3">容易焦虑，但提醒自己后能停住</option>
+              <option value="2">越被冷淡越想确认，越想解释清楚</option>
+              <option value="1">一失联就崩溃，容易连续发消息或做冲动事</option>
+              <option value="1">表面冷静，其实用冷处理、消失、刺激对方来保护自己</option>
+            </select>
+          </label>
+          <label>
+            特殊场景
+            <select name="specialScenario">
+              <option value="4">没有明显特殊阻碍，主要是相处问题</option>
+              <option value="3">异地/见面少/工作忙，连接感下降</option>
+              <option value="3">父母或朋友反对，但双方曾经想坚持</option>
+              <option value="2">对方有新暧昧/新欢迹象，但关系不稳定</option>
+              <option value="1">对方已经进入稳定新关系</option>
+              <option value="2">多次分分合合，彼此都累但又放不下</option>
+            </select>
+          </label>
+        <label>
+          你最想要的结果
+          <select name="goalType">
+              <option value="4">希望复合，但更希望关系真的变好</option>
+              <option value="3">想先恢复联系，再慢慢看机会</option>
+              <option value="2">只想让对方回头，暂时顾不上后面怎么相处</option>
+            <option value="1">想证明自己没输，想让对方后悔</option>
+          </select>
+        </label>
+          <label>
+            复合意愿
+            <select name="reconciliationWillingness">
+              <option value="5">非常强烈：愿意长期调整，不只想让对方回来</option>
+              <option value="4">比较强烈：愿意按节奏做，但希望尽快看到反馈</option>
+              <option value="3">中等：想挽回，但也会观察这段关系是否值得</option>
+              <option value="2">摇摆：舍不得，但担心复合后还是重复旧问题</option>
+              <option value="1">更多是不甘心、失控或害怕失去，并没想清楚未来</option>
+            </select>
+          </label>
+          <label>
+            每天可以用多久时间来挽回
+            <select name="dailyTime">
+              <option value="5">2小时以上：可以系统复盘、学习沟通、重建状态</option>
+              <option value="4">1-2小时：可以稳定执行每日行动</option>
+              <option value="3">30-60分钟：适合轻量复盘和低压复联</option>
+              <option value="2">10-30分钟：需要极简方案，少做但不做错</option>
+              <option value="1">几乎没有时间：先做止损和情绪稳定，不适合复杂操作</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="section-block full">
+        <h2>八、红线筛查</h2>
+        <div class="checks">
+          <label><input type="checkbox" name="redFlags" value="violence"> 关系中出现过肢体暴力、性胁迫或现实威胁</label>
+          <label><input type="checkbox" name="redFlags" value="stalking"> 分手后有跟踪、堵门、冒充、查岗或持续骚扰</label>
+          <label><input type="checkbox" name="redFlags" value="selfharm"> 任何一方用自伤/轻生威胁逼迫复合</label>
+          <label><input type="checkbox" name="redFlags" value="reputationHarm"> 分手后造谣、曝光隐私、威胁公开聊天记录或恶意破坏对方名誉</label>
+        </div>
+      </section>
+
+      <div class="actions full">
+        <button type="button" id="calculate">生成测评报告</button>
+        <button type="reset" class="secondary">重新填写</button>
+      </div>
+    </form>
+
+    <section id="analysisProcess" class="analysis-process hidden" aria-live="polite">
+      <div class="analysis-head">
+        <div>
+          <p class="eyebrow">报告生成中</p>
+          <h2>正在匹配你的关系情况</h2>
+        </div>
+        <strong id="analysisPercent">0%</strong>
+      </div>
+      <div class="analysis-bar"><span id="analysisFill"></span></div>
+      <ul id="analysisSteps" class="analysis-steps"></ul>
+    </section>
+
+    <section id="result" class="result hidden" aria-live="polite">
+      <div class="result-top">
+        <div>
+          <p class="eyebrow">测评报告</p>
+          <h2 id="resultTitle"></h2>
+        </div>
+        <div class="meter" aria-label="概率区间">
+          <span id="probability"></span>
+        </div>
+      </div>
+      <div class="bar"><span id="barFill"></span></div>
+      <div class="report-grid">
+        <article>
+          <h3>关系类型画像</h3>
+          <ul id="profileList"></ul>
+        </article>
+        <article>
+          <h3>当前挽回流程</h3>
+          <ul id="recoveryStageList"></ul>
+        </article>
+        <article>
+          <h3>阶段操作重点</h3>
+          <ul id="stageActionList"></ul>
+        </article>
+        <article>
+          <h3>复联工具适配</h3>
+          <ul id="toolFitList"></ul>
+        </article>
+        <article>
+          <h3>朋友圈展示方向</h3>
+          <ul id="socialDisplayList"></ul>
+        </article>
+        <article>
+          <h3>现阶段建议</h3>
+          <ul id="actionList"></ul>
+        </article>
+        <article>
+          <h3>避坑提醒</h3>
+          <ul id="pitfallList"></ul>
+        </article>
+        <article>
+          <h3>复联话术方向</h3>
+          <p id="scriptAdvice"></p>
+        </article>
+        <article>
+          <h3>关键判断</h3>
+          <ul id="diagnosisList"></ul>
+        </article>
+        <article>
+          <h3>你真正卡住的点</h3>
+          <ul id="insightList"></ul>
+        </article>
+        <article>
+          <h3>对方心理翻译</h3>
+          <ul id="mindList"></ul>
+        </article>
+        <article>
+          <h3>7天行动节奏</h3>
+          <ul id="planList"></ul>
+        </article>
+        <article>
+          <h3>复合后维护</h3>
+          <ul id="maintenanceList"></ul>
+        </article>
+        <article class="full">
+          <h3>专业依据与案例映射</h3>
+          <ul id="sourceList"></ul>
+        </article>
+        <article class="report-note full">
+          <h3>报告使用提醒</h3>
+          <p>请所有做完测评报告的同学，将本页报告完整截图发给你的老师，老师可以根据你的窗口期、对方信号和红线情况，进一步判断下一步该怎么做。</p>
+          <a class="teacher-link" href="https://work.weixin.qq.com/ca/cawcde5f657b767c07" target="_blank" rel="noopener noreferrer">点击联系老师</a>
+        </article>
+        <article class="ai-card full">
+          <h3>AI 深度分析</h3>
+          <p>生成基础报告后，可以让 AI 根据你的选项和自述，输出更细的关系判断、复联节奏、第一句话方向和 7 天行动计划。</p>
+          <button type="button" id="aiAnalyze" class="ai-button">生成 AI 深度分析</button>
+          <div id="aiOutput" class="ai-output">请先生成测评报告，再点击这里进行深度分析。</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="knowledge">
+      <h2>系统依据</h2>
+      <div class="knowledge-grid">
+        <article>
+          <h3>研究启发</h3>
+          <p>系统把“还能不能修”拆成四件事：关系底子、对方是否还有安全感、你的情绪与边界控制、核心矛盾是否真的可改。它不判断谁更爱谁，只判断继续推进会不会有效。</p>
+        </article>
+        <article>
+          <h3>案例共性</h3>
+          <p>真实复合里最常见的转折点不是一句神奇话术，而是对方发现“这次不会再被拉进旧循环”。失败案例往往败在加压、表演式改变、介入新关系、把复合当输赢。</p>
+        </article>
+        <article>
+          <h3>输出原则</h3>
+          <p>系统给的是行动优先级，不制造必胜幻觉；当关系触及安全红线时，优先建议停止伤害、保留长期机会，而不是继续把局面做坏。</p>
+        </article>
+        <article>
+          <h3>参考方向</h3>
+          <p>模型参考了依恋与分手痛苦、冲突修复、情绪泛滥、边界与跟踪安全等研究和公共资料，并把它们翻译成普通人能执行的步骤。</p>
+        </article>
+      </div>
+      <p class="sources">
+        参考：依恋与分手痛苦研究、Gottman 冲突修复资料、Love Is Respect 分手与跟踪安全资料。本系统只把这些资料转成自测和行动建议，不替代专业咨询。
+      </p>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
