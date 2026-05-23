@@ -18,6 +18,7 @@ const planList = document.querySelector("#planList");
 const recoveryStageList = document.querySelector("#recoveryStageList");
 const stageActionList = document.querySelector("#stageActionList");
 const toolFitList = document.querySelector("#toolFitList");
+const resistanceList = document.querySelector("#resistanceList");
 const socialDisplayList = document.querySelector("#socialDisplayList");
 const analysisProcess = document.querySelector("#analysisProcess");
 const analysisPercent = document.querySelector("#analysisPercent");
@@ -179,6 +180,7 @@ const sourceNotes = [
   "《爱情的重建》《如何优雅地挽回前任》《挽回爱情技巧》等公开资料共同强调：修复不是求回，而是识别裂痕、稳定自我、恢复连接、重建信任。",
   "《二次吸引》相关公开资料：挽回重点不是求回，而是降低需求感、修复旧问题、创造新吸引点；对应本系统里的“低压复联、稳定变化、重新建立吸引”。",
   "《挽回爱情33堂课》PDF全文学习整理：错误挽回、情绪稳定、抽离降压、种子信/成长信、朋友圈展示、间接复联、直接复联、复合约会、结果信等，已转化为本系统里的“当前挽回流程、工具适配、阶段操作重点、朋友圈展示方向”。",
+  "直播笔记《被分手，正确的挽回思路：高效挽回4步法》：不纠缠、不用强需求逼回应；按不排斥期、排斥期、极度排斥判断复联方式；复联开口要表明目的、包装低压力需求、给对方回复理由、点到为止。",
   "Gottman 关系研究中的“四骑士”：批评、防御、轻蔑、冷处理，是很多分手前反复消耗的典型沟通模式；对应本系统里的“指责、防御、冷暴力、长期重复问题”。",
   "Gottman 的“修复尝试”概念：关系能不能修，不只看吵没吵架，而看冲突后能否降温、承认影响、重新合作；对应本系统里的“低压复联、关键沟通、冲突暂停机制”。",
   "依恋焦虑与分手反刍研究提示：越焦虑越想确认、解释、追问，但这些动作常让对方压力更大；对应本系统里的“零加压”和“先恢复生活秩序”。",
@@ -236,6 +238,7 @@ function buildAnalysisSteps(data, score, redFlags) {
     `正在计算四项权重：关系基础 ${relation}、对方信号 ${signal}、自我状态 ${self}、时机条件 ${timing}。`,
     `正在匹配知识库与真实案例共性：错误挽回、抽离降压、种子信/成长信、朋友圈展示、复合约会。`,
     `正在判断复联工具适配：写信、朋友圈、轻话题、见面沟通，哪些能做，哪些现在不能做。`,
+    "正在识别排斥等级：不排斥、排斥、极度排斥，并匹配低压力开口策略。",
     `正在结合你的可投入时间：${dailyTime}，压缩成你能执行的行动节奏。`,
     `已匹配当前阶段：${stage}，正在生成行动优先级、避坑提醒、7天计划和报告截图提醒。`
   ];
@@ -572,6 +575,44 @@ function buildToolFit(data, redFlags) {
   return items;
 }
 
+function buildResistanceStrategy(data, redFlags) {
+  if (redFlags.length || Number(data.get("behavior")) < 0 || Number(data.get("stability")) < 0) {
+    return [
+      "排斥等级：安全红线型排斥。当前不是聊天技术问题，而是对方可能已经把靠近理解成风险。",
+      "开口原则：不发挽回话术，不发长篇解释；如必须沟通，只做边界声明、后果承担和停止打扰。",
+      "关键提醒：先让对方确认你不会继续升级，后面才可能重新评估关系。"
+    ];
+  }
+
+  const contactStatus = Number(data.get("contactStatus"));
+  const attitude = Number(data.get("attitude"));
+  const behavior = Number(data.get("behavior"));
+  const lastTalk = Number(data.get("lastTalk"));
+  const offlineMeet = Number(data.get("offlineMeet"));
+  const items = [];
+
+  if (contactStatus >= 4 && attitude >= 3 && lastTalk >= 3) {
+    items.push("排斥等级：不排斥期。能聊天不代表能聊感情，只代表对方暂时还能接受你的存在。");
+    items.push("开口策略：多聊自己当前状态、现实小事和轻话题，少问对方想法，不试探“还爱不爱”。");
+    items.push("撤退标准：对方回应变短、开始回避、只剩礼貌回复时，当天就收住，不要把轻松聊天变成复合谈判。");
+  } else if (contactStatus >= 2 || attitude >= 2 || offlineMeet >= 2) {
+    items.push("排斥等级：排斥期。对方冷淡、回避或只聊必要事务，说明防御还在，不适合直接谈复合。");
+    items.push("开口策略：先适当消失 3-10 天降压；重新开口要有低压力理由，比如共同事务、对方熟悉且擅长的小问题。");
+    items.push("消息结构：表明目的 + 包装低压力需求 + 给对方回复理由 + 点到为止；不要用“在吗、最近怎么样、我想你了”开局。");
+  } else {
+    items.push("排斥等级：极度排斥期。拉黑、删除、拒绝见面或明显厌烦时，强行触达只会强化负面标签。");
+    items.push("开口策略：先暂停直接联系，必要时只考虑一封很短的启动信；启动信不是求和信，而是承认事实、反思影响、表达停止施压。");
+    items.push("恢复好友位前提：你已经停止纠缠，并且有现实、自然、无威胁的触达理由；否则宁可继续降压。");
+  }
+
+  if (behavior <= 1) {
+    items.push("你的近期高需求行为已经让对方更容易预判你会继续求复合。现在最重要的是打破这个预判：少说、稳定、说到做到。");
+  }
+
+  items.push("底层逻辑：消失只能降低排斥，不能让对方自动爱上你；真正恢复连接，要靠新的相处感觉和可验证的改变。");
+  return items;
+}
+
 function buildSocialDisplay(data, redFlags) {
   if (redFlags.length) {
     return [
@@ -704,6 +745,7 @@ function renderReport(data, score, redFlags) {
   listItems(recoveryStageList, buildRecoveryStage(data, redFlags, score));
   listItems(stageActionList, buildStageActions(data, redFlags));
   listItems(toolFitList, buildToolFit(data, redFlags));
+  listItems(resistanceList, buildResistanceStrategy(data, redFlags));
   listItems(socialDisplayList, buildSocialDisplay(data, redFlags));
   listItems(diagnosisList, buildDiagnosis(data, score, redFlags));
   listItems(insightList, buildInsights(data, redFlags));
@@ -765,6 +807,7 @@ function buildPayload(data, score, redFlags, report, contextual) {
     recoveryStage: buildRecoveryStage(data, redFlags, score),
     stageActions: buildStageActions(data, redFlags),
     toolFit: buildToolFit(data, redFlags),
+    resistanceStrategy: buildResistanceStrategy(data, redFlags),
     socialDisplay: buildSocialDisplay(data, redFlags),
     scriptAdvice: report.script,
     diagnosis: buildDiagnosis(data, score, redFlags),

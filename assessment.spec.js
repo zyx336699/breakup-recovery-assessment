@@ -43,6 +43,7 @@ test("high repair scenario produces a measured high-window report", async ({ pag
   await expect(page.locator("#actionList")).toContainText("不要急着把关系恢复到分手前的强度");
   await expect(page.locator("#recoveryStageList")).toContainText(/直接复联|复合约会|高姿态/);
   await expect(page.locator("#toolFitList")).toContainText("见面");
+  await expect(page.locator("#resistanceList")).toContainText("不排斥期");
 });
 
 test("low pressure and unstable behavior reduce the recommendation", async ({ page }) => {
@@ -81,6 +82,7 @@ test("low pressure and unstable behavior reduce the recommendation", async ({ pa
   await expect(page.locator("#pitfallList")).toContainText("联系频率和情绪强度过高");
   await expect(page.locator("#recoveryStageList")).toContainText("情绪急救期");
   await expect(page.locator("#stageActionList")).toContainText("冷却动作");
+  await expect(page.locator("#resistanceList")).toContainText(/排斥期|极度排斥期/);
 });
 
 test("red flags override score and stop recovery guidance", async ({ page }) => {
@@ -92,6 +94,7 @@ test("red flags override score and stop recovery guidance", async ({ page }) => 
   await expect(page.locator("#probability")).toContainText("先止损");
   await expect(page.locator("#scriptAdvice")).toContainText("不建议发送挽回话术");
   await expect(page.locator("#toolFitList")).toContainText("暂不适合");
+  await expect(page.locator("#resistanceList")).toContainText("安全红线型排斥");
 });
 
 test("report includes professional source notes and removes mentor wechat", async ({ page }) => {
@@ -100,6 +103,7 @@ test("report includes professional source notes and removes mentor wechat", asyn
   await expect(page.locator("#result")).toBeVisible({ timeout: reportTimeout });
   await expect(page.locator("#sourceList")).toContainText("Gottman");
   await expect(page.locator("#sourceList")).toContainText("挽回爱情33堂课");
+  await expect(page.locator("#sourceList")).toContainText("直播笔记");
   await expect(page.locator("#insightList")).toContainText("挽回不是追回一个人");
   await expect(page.getByRole("link", { name: "点击联系老师" })).toHaveAttribute("href", "https://work.weixin.qq.com/ca/cawcde5f657b767c07");
   await expect(page.locator("body")).not.toContainText("老师微信");
