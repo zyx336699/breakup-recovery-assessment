@@ -757,7 +757,10 @@ function renderReport(data, score, redFlags) {
   latestReportPayload = buildPayload(data, score, redFlags, report, contextual);
   trackEvent("assessment", {
     stage: report.title,
-    score: `${score}/${maxScore}`
+    window: report.range,
+    score: `${score}/${maxScore}`,
+    redFlagCount: redFlags.length,
+    basicInfo: buildBasicInfo(data)
   });
   if (aiOutput) {
     aiOutput.textContent = "基础报告已生成。你可以点击“生成 AI 深度分析”，获得更细的挽回节奏和沟通建议。";
@@ -770,11 +773,20 @@ function renderReport(data, score, redFlags) {
   result.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function getAttribution() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    source: params.get("utm_source") || params.get("source") || "direct",
+    campaign: params.get("utm_campaign") || "",
+    referrer: document.referrer || ""
+  };
+}
+
 function trackEvent(type, extra = {}) {
   fetch("/api/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, ...extra })
+    body: JSON.stringify({ type, ...getAttribution(), ...extra })
   }).catch(() => {});
 }
 
@@ -782,6 +794,22 @@ function selectedText(data, field) {
   const element = form.elements[field];
   if (!element || !element.options) return data.get(field) || "";
   return element.options[element.selectedIndex]?.textContent.trim() || "";
+}
+
+function buildBasicInfo(data) {
+  return {
+    userGender: selectedText(data, "userGender"),
+    targetGender: selectedText(data, "targetGender"),
+    age: selectedText(data, "age"),
+    relationshipStage: selectedText(data, "relationshipStage"),
+    duration: selectedText(data, "duration"),
+    breakupType: selectedText(data, "breakupType"),
+    contactStatus: selectedText(data, "contactStatus"),
+    specialScenario: selectedText(data, "specialScenario"),
+    goalType: selectedText(data, "goalType"),
+    reconciliationWillingness: selectedText(data, "reconciliationWillingness"),
+    dailyTime: selectedText(data, "dailyTime")
+  };
 }
 
 function buildPayload(data, score, redFlags, report, contextual) {

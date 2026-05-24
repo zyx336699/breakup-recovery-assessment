@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
+const { Pool } = require("pg");
 require("dotenv").config({ path: path.join(__dirname, ".env.local") });
 
 const app = express();
@@ -16,6 +17,14 @@ const adminToken = crypto.createHash("sha256").update(`${adminPassword || "admin
 const aiRequests = new Map();
 const dataDir = path.join(__dirname, "data");
 const statsPath = path.join(dataDir, "stats.json");
+const databaseUrl = process.env.DATABASE_URL || "";
+const pool = databaseUrl
+  ? new Pool({
+      connectionString: databaseUrl,
+      ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false }
+    })
+  : null;
+let dbReady = false;
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -57,18 +66,103 @@ function saveStats(stats) {
   fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2), "utf8");
 }
 
-function recordEvent(type, req, extra = {}) {
-  const stats = loadStats();
-  if (type === "visit") stats.visits += 1;
-  if (type === "assessment") stats.assessments += 1;
-  if (type === "ai") stats.aiAnalyses += 1;
-  stats.events.push({
+function compactText(value, max = 120) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function getBasic(req, key) {
+  return compactText(req.body?.basicInfo?.[key]);
+}
+
+async function initDb() {
+  if (!pool || dbReady) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS analytics_events (
+      id BIGSERIAL PRIMARY KEY,
+      type TEXT NOT NULL,
+      time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ip TEXT,
+      user_agent TEXT,
+      stage TEXT,
+      window_label TEXT,
+      score TEXT,
+      source TEXT,
+      campaign TEXT,
+      referrer TEXT,
+      user_gender TEXT,
+      target_gender TEXT,
+      age TEXT,
+      relationship_stage TEXT,
+      duration TEXT,
+      breakup_type TEXT,
+      contact_status TEXT,
+      special_scenario TEXT,
+      goal_type TEXT,
+      reconciliation_willingness TEXT,
+      daily_time TEXT,
+      red_flag_count INTEGER DEFAULT 0
+    )
+  `);
+  dbReady = true;
+}
+
+async function recordEvent(type, req, extra = {}) {
+  const event = {
     type,
     time: new Date().toISOString(),
     ip: req.headers["cf-connecting-ip"] || req.ip || "",
     userAgent: req.headers["user-agent"] || "",
-    ...extra
-  });
+    stage: compactText(extra.stage),
+    window: compactText(extra.window),
+    score: compactText(extra.score),
+    source: compactText(req.body?.source || extra.source || "direct"),
+    campaign: compactText(req.body?.campaign || extra.campaign),
+    referrer: compactText(req.body?.referrer || extra.referrer, 300),
+    userGender: getBasic(req, "userGender"),
+    targetGender: getBasic(req, "targetGender"),
+    age: getBasic(req, "age"),
+    relationshipStage: getBasic(req, "relationshipStage"),
+    duration: getBasic(req, "duration"),
+    breakupType: getBasic(req, "breakupType"),
+    contactStatus: getBasic(req, "contactStatus"),
+    specialScenario: getBasic(req, "specialScenario"),
+    goalType: getBasic(req, "goalType"),
+    reconciliationWillingness: getBasic(req, "reconciliationWillingness"),
+    dailyTime: getBasic(req, "dailyTime"),
+    redFlagCount: Number(extra.redFlagCount || req.body?.redFlagCount || 0)
+  };
+
+  if (pool) {
+    try {
+      await initDb();
+      await pool.query(
+        `INSERT INTO analytics_events (
+          type, time, ip, user_agent, stage, window_label, score, source, campaign, referrer,
+          user_gender, target_gender, age, relationship_stage, duration, breakup_type,
+          contact_status, special_scenario, goal_type, reconciliation_willingness, daily_time, red_flag_count
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+          $11, $12, $13, $14, $15, $16,
+          $17, $18, $19, $20, $21, $22
+        )`,
+        [
+          event.type, event.time, event.ip, event.userAgent, event.stage, event.window, event.score,
+          event.source, event.campaign, event.referrer, event.userGender, event.targetGender, event.age,
+          event.relationshipStage, event.duration, event.breakupType, event.contactStatus, event.specialScenario,
+          event.goalType, event.reconciliationWillingness, event.dailyTime, event.redFlagCount
+        ]
+      );
+      return;
+    } catch (error) {
+      console.error("analytics db write failed:", error.message);
+    }
+  }
+
+  const stats = loadStats();
+  if (type === "visit") stats.visits += 1;
+  if (type === "assessment") stats.assessments += 1;
+  if (type === "ai") stats.aiAnalyses += 1;
+  stats.events.push(event);
   saveStats(stats);
 }
 
@@ -134,20 +228,136 @@ function adminLoginPage(message = "") {
 </html>`;
 }
 
-function adminPage() {
-  const stats = loadStats();
+function countBy(events, key, limit = 8) {
+  const map = new Map();
+  events.forEach((event) => {
+    const value = compactText(event[key]) || "未记录";
+    map.set(value, (map.get(value) || 0) + 1);
+  });
+  return Array.from(map.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([label, count]) => ({ label, count }));
+}
+
+function percent(part, total) {
+  if (!total) return "0%";
+  return `${Math.round((part / total) * 100)}%`;
+}
+
+function normalizeDbEvent(row) {
+  return {
+    type: row.type,
+    time: new Date(row.time).toISOString(),
+    ip: row.ip || "",
+    userAgent: row.user_agent || "",
+    stage: row.stage || "",
+    window: row.window_label || "",
+    score: row.score || "",
+    source: row.source || "",
+    campaign: row.campaign || "",
+    referrer: row.referrer || "",
+    userGender: row.user_gender || "",
+    targetGender: row.target_gender || "",
+    age: row.age || "",
+    relationshipStage: row.relationship_stage || "",
+    duration: row.duration || "",
+    breakupType: row.breakup_type || "",
+    contactStatus: row.contact_status || "",
+    specialScenario: row.special_scenario || "",
+    goalType: row.goal_type || "",
+    reconciliationWillingness: row.reconciliation_willingness || "",
+    dailyTime: row.daily_time || "",
+    redFlagCount: Number(row.red_flag_count || 0)
+  };
+}
+
+async function getAnalytics() {
+  if (pool) {
+    try {
+      await initDb();
+      const totals = await pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE type='visit')::int AS visits,
+          COUNT(*) FILTER (WHERE type='assessment')::int AS assessments,
+          COUNT(*) FILTER (WHERE type='ai')::int AS ai_analyses
+        FROM analytics_events
+      `);
+      const eventsResult = await pool.query("SELECT * FROM analytics_events ORDER BY time DESC LIMIT 500");
+      const stats = totals.rows[0] || { visits: 0, assessments: 0, ai_analyses: 0 };
+      return {
+        storage: "database",
+        visits: Number(stats.visits || 0),
+        assessments: Number(stats.assessments || 0),
+        aiAnalyses: Number(stats.ai_analyses || 0),
+        events: eventsResult.rows.map(normalizeDbEvent).reverse()
+      };
+    } catch (error) {
+      console.error("analytics db read failed:", error.message);
+    }
+  }
+
+  return {
+    storage: "file",
+    ...loadStats()
+  };
+}
+
+function renderDistribution(title, items) {
+  const rows = items.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.label)}</td>
+      <td>${item.count}</td>
+    </tr>
+  `).join("");
+  return `
+    <section class="section">
+      <h2>${title}</h2>
+      <table class="mini-table">
+        <tbody>${rows || "<tr><td colspan='2'>暂无记录</td></tr>"}</tbody>
+      </table>
+    </section>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+async function adminPage() {
+  const stats = await getAnalytics();
   const today = new Date().toISOString().slice(0, 10);
   const todayEvents = stats.events.filter((event) => event.time.slice(0, 10) === today);
   const todayVisits = todayEvents.filter((event) => event.type === "visit").length;
   const todayAssessments = todayEvents.filter((event) => event.type === "assessment").length;
   const todayAi = todayEvents.filter((event) => event.type === "ai").length;
+  const conversionRate = percent(stats.assessments, stats.visits);
+  const aiUsageRate = percent(stats.aiAnalyses, stats.assessments);
+  const assessmentEvents = stats.events.filter((event) => event.type === "assessment");
   const rows = stats.events.slice(-80).reverse().map((event) => `
     <tr>
-      <td>${event.time.replace("T", " ").slice(0, 19)}</td>
-      <td>${event.type}</td>
-      <td>${event.stage || ""}</td>
-      <td>${event.score || ""}</td>
-      <td>${event.ip || ""}</td>
+      <td>${escapeHtml(event.time.replace("T", " ").slice(0, 19))}</td>
+      <td>${escapeHtml(event.type)}</td>
+      <td>${escapeHtml(event.stage || event.window || "")}</td>
+      <td>${escapeHtml(event.score || "")}</td>
+      <td>${escapeHtml(event.source || "")}</td>
+      <td>${escapeHtml(event.ip || "")}</td>
+    </tr>
+  `).join("");
+  const studentRows = assessmentEvents.slice(-80).reverse().map((event) => `
+    <tr>
+      <td>${escapeHtml(event.time.replace("T", " ").slice(0, 19))}</td>
+      <td>${escapeHtml(event.userGender)}</td>
+      <td>${escapeHtml(event.targetGender)}</td>
+      <td>${escapeHtml(event.age)}</td>
+      <td>${escapeHtml(event.breakupType)}</td>
+      <td>${escapeHtml(event.contactStatus)}</td>
+      <td>${escapeHtml(event.stage)}</td>
+      <td>${escapeHtml(event.score)}</td>
     </tr>
   `).join("");
 
@@ -158,23 +368,40 @@ function adminPage() {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>分手挽回自测评估系统 - 后台</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;background:#f4f0ea;color:#1d2526;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif}.wrap{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:34px 0 60px}h1{margin:0 0 8px;font-size:34px}.muted{color:#697170;margin:0 0 22px}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:24px}.card{padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;box-shadow:0 16px 42px rgba(53,45,34,.1)}.card span{display:block;color:#697170;font-weight:700}.card strong{display:block;margin-top:8px;color:#1e5b54;font-size:38px;line-height:1}.section{padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:10px;border-bottom:1px solid #e6ded3;text-align:left;font-size:14px}th{color:#1e5b54}a{color:#1e5b54;font-weight:700}@media(max-width:760px){.cards{grid-template-columns:1fr}}
+    *{box-sizing:border-box}body{margin:0;background:#f4f0ea;color:#1d2526;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif}.wrap{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:34px 0 60px}h1{margin:0 0 8px;font-size:34px}.muted{color:#697170;margin:0 0 22px}.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:24px}.card{padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;box-shadow:0 16px 42px rgba(53,45,34,.1)}.card span{display:block;color:#697170;font-weight:700}.card strong{display:block;margin-top:8px;color:#1e5b54;font-size:34px;line-height:1}.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}.section{margin-bottom:16px;padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:10px;border-bottom:1px solid #e6ded3;text-align:left;font-size:14px;vertical-align:top}th{color:#1e5b54}.mini-table{min-width:0}.mini-table td:last-child{width:80px;font-weight:800;color:#1e5b54}.badge{display:inline-block;margin-left:8px;padding:3px 8px;border-radius:99px;background:#e5f1ed;color:#1e5b54;font-size:12px;font-weight:800}a{color:#1e5b54;font-weight:700}@media(max-width:900px){.cards,.dashboard-grid{grid-template-columns:1fr}table{min-width:760px}}
   </style>
 </head>
 <body>
   <main class="wrap">
     <h1>专属后台</h1>
-    <p class="muted">这里只统计访问和测评行为，不保存用户填写的详细隐私文本。</p>
+    <p class="muted">这里只统计访问、测评和基础画像，不保存用户填写的详细自述文本。<span class="badge">${stats.storage === "database" ? "数据库存储" : "本地文件存储"}</span></p>
     <div class="cards">
       <div class="card"><span>总访问次数</span><strong>${stats.visits}</strong><small>今日 ${todayVisits}</small></div>
       <div class="card"><span>完成测评次数</span><strong>${stats.assessments}</strong><small>今日 ${todayAssessments}</small></div>
       <div class="card"><span>AI 分析次数</span><strong>${stats.aiAnalyses}</strong><small>今日 ${todayAi}</small></div>
+      <div class="card"><span>测评转化率</span><strong>${conversionRate}</strong><small>测评 / 访问</small></div>
+      <div class="card"><span>AI 使用率</span><strong>${aiUsageRate}</strong><small>AI / 测评</small></div>
     </div>
+    <div class="dashboard-grid">
+      ${renderDistribution("测评结果分布", countBy(assessmentEvents, "stage"))}
+      ${renderDistribution("用户来源分布", countBy(stats.events, "source"))}
+      ${renderDistribution("分手类型分布", countBy(assessmentEvents, "breakupType"))}
+      ${renderDistribution("联系状态分布", countBy(assessmentEvents, "contactStatus"))}
+      ${renderDistribution("年龄段分布", countBy(assessmentEvents, "age"))}
+      ${renderDistribution("每日可投入时间", countBy(assessmentEvents, "dailyTime"))}
+    </div>
+    <section class="section">
+      <h2>学员基础信息</h2>
+      <table>
+        <thead><tr><th>时间</th><th>本人</th><th>对方</th><th>年龄</th><th>分手类型</th><th>联系状态</th><th>结果阶段</th><th>分数</th></tr></thead>
+        <tbody>${studentRows || "<tr><td colspan='8'>暂无测评记录</td></tr>"}</tbody>
+      </table>
+    </section>
     <section class="section">
       <h2>最近记录</h2>
       <table>
-        <thead><tr><th>时间</th><th>类型</th><th>窗口/阶段</th><th>分数</th><th>IP</th></tr></thead>
-        <tbody>${rows || "<tr><td colspan='5'>暂无记录</td></tr>"}</tbody>
+        <thead><tr><th>时间</th><th>类型</th><th>窗口/阶段</th><th>分数</th><th>来源</th><th>IP</th></tr></thead>
+        <tbody>${rows || "<tr><td colspan='6'>暂无记录</td></tr>"}</tbody>
       </table>
     </section>
   </main>
@@ -195,7 +422,7 @@ app.post("/access", express.urlencoded({ extended: false }), (req, res) => {
   res.status(401).type("html").send(loginPage("口令不正确，请重新输入。"));
 });
 
-app.get("/admin", (req, res) => {
+app.get("/admin", async (req, res) => {
   if (!adminPassword) {
     res.status(503).type("html").send(adminLoginPage("后台还没有配置 ADMIN_PASSWORD。"));
     return;
@@ -204,7 +431,7 @@ app.get("/admin", (req, res) => {
     res.redirect("/admin/login");
     return;
   }
-  res.type("html").send(adminPage());
+  res.type("html").send(await adminPage());
 });
 
 app.get("/admin/login", (req, res) => {
@@ -230,15 +457,17 @@ app.use((req, res, next) => {
   res.redirect("/login");
 });
 
-app.post("/api/track", (req, res) => {
+app.post("/api/track", async (req, res) => {
   const type = req.body?.type;
   if (!["visit", "assessment"].includes(type)) {
     res.status(400).json({ error: "无效统计类型" });
     return;
   }
-  recordEvent(type, req, {
+  await recordEvent(type, req, {
     stage: req.body?.stage || "",
-    score: req.body?.score || ""
+    window: req.body?.window || "",
+    score: req.body?.score || "",
+    redFlagCount: req.body?.redFlagCount || 0
   });
   res.json({ ok: true });
 });
@@ -301,8 +530,9 @@ app.post("/api/deepseek-analysis", async (req, res) => {
   }
   history.push(now);
   aiRequests.set(ip, history);
-  recordEvent("ai", req, {
+  await recordEvent("ai", req, {
     stage: req.body?.stage || "",
+    window: req.body?.window || "",
     score: req.body?.score || ""
   });
 

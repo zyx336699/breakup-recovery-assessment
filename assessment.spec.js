@@ -124,4 +124,7 @@ test("admin dashboard requires login and shows stats", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "专属后台" })).toBeVisible();
   await expect(page.locator("body")).toContainText("总访问次数");
   await expect(page.locator("body")).toContainText("完成测评次数");
+  await expect(page.locator("body")).toContainText("测评转化率");
+  await expect(page.locator("body")).toContainText("测评结果分布");
+  await expect(page.locator("body")).toContainText("学员基础信息");
 });

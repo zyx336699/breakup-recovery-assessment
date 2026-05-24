@@ -31,6 +31,8 @@ DEEPSEEK_MODEL=deepseek-chat
 SITE_ACCESS_CODE=设置一个给学员进入系统的口令
 ACCESS_COOKIE_SECRET=随便生成一串长一点的随机字符
 ADMIN_PASSWORD=设置你的后台口令
+DATABASE_URL=你的PostgreSQL数据库连接地址
+DATABASE_SSL=true
 ```
 
 多数部署平台会自动提供 `PORT`，不需要手动填。
@@ -60,6 +62,8 @@ DEEPSEEK_MODEL=deepseek-chat
 SITE_ACCESS_CODE=你要发给学员的访问口令
 ACCESS_COOKIE_SECRET=一串随机字符
 ADMIN_PASSWORD=你的后台口令
+DATABASE_URL=你的PostgreSQL数据库连接地址
+DATABASE_SSL=true
 ```
 
 7. 部署完成后，Render 会给你一个公网网址。把这个网址发给用户即可。
@@ -72,7 +76,7 @@ ADMIN_PASSWORD=你的后台口令
 2. 上传本项目里的这些内容：`public/`、`server.js`、`package.json`、`package-lock.json`、`.env.example`、`.gitignore`、`render.yaml`、`Procfile`。
 3. 不要上传 `.env.local`、`node_modules/`、`screenshots/`、`test-results/`。
 4. 到 Render 连接这个仓库并部署。
-5. 在 Render 的环境变量里填写新版 `DEEPSEEK_API_KEY`、`SITE_ACCESS_CODE`、`ACCESS_COOKIE_SECRET`、`ADMIN_PASSWORD`。
+5. 在 Render 的环境变量里填写新版 `DEEPSEEK_API_KEY`、`SITE_ACCESS_CODE`、`ACCESS_COOKIE_SECRET`、`ADMIN_PASSWORD`、`DATABASE_URL`。
 6. 部署完成后，把 Render 给你的网址发给别人。
 
 ## 也可以部署到 Railway / Zeabur / VPS
@@ -92,6 +96,8 @@ DEEPSEEK_MODEL
 SITE_ACCESS_CODE
 ACCESS_COOKIE_SECRET
 ADMIN_PASSWORD
+DATABASE_URL
+DATABASE_SSL
 ```
 
 ## 防同行盗取说明
@@ -102,6 +108,7 @@ ADMIN_PASSWORD
 - DeepSeek key 和 AI 分析提示词只在后端，用户浏览器看不到。
 - AI 分析接口有简单限流，避免被大量刷接口。
 - 私有后台需要单独口令，普通用户无法查看访问和测评统计。
+- 后台统计优先写入 PostgreSQL 数据库，避免 Render 重启或重新部署后清零；未配置 `DATABASE_URL` 时会退回本地文件统计，仅适合测试。
 - 页面加了 `noindex` 和 `robots.txt`，降低被搜索引擎收录的概率。
 - `.env.local` 不会上传，避免泄露 key 和访问口令。
 
