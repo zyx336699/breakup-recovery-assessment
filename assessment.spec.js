@@ -105,7 +105,13 @@ test("report includes professional source notes and removes mentor wechat", asyn
   await expect(page.locator("#sourceList")).toContainText("挽回爱情33堂课");
   await expect(page.locator("#sourceList")).toContainText("直播笔记");
   await expect(page.locator("#insightList")).toContainText("挽回不是追回一个人");
-  await expect(page.getByRole("link", { name: "点击联系老师" })).toHaveAttribute("href", "https://work.weixin.qq.com/ca/cawcde5f657b767c07");
+  await expect(page.locator("#teacherHelpList")).toContainText(/第一句话|主动联系|抽离/);
+  await expect(page.locator("#teacherMessage")).toContainText("老师你好，我刚做完分手挽回测评");
+  await expect(page.getByRole("link", { name: "发送报告给老师，领取人工解读" })).toHaveAttribute("href", "https://work.weixin.qq.com/ca/cawcde5f657b767c07");
+  await expect(page.locator("#followupPrompt")).toBeVisible();
+  await expect(page.locator("#followupPrompt")).toContainText("下一步别急着乱操作");
+  await page.getByRole("button", { name: "我先截图" }).click();
+  await expect(page.locator("#followupPrompt")).toBeHidden();
   await expect(page.locator("body")).not.toContainText("老师微信");
 });
 

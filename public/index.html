@@ -479,9 +479,29 @@
           <ul id="sourceList"></ul>
         </article>
         <article class="report-note full">
-          <h3>报告使用提醒</h3>
-          <p>请所有做完测评报告的同学，将本页报告完整截图发给你的老师，老师可以根据你的窗口期、对方信号和红线情况，进一步判断下一步该怎么做。</p>
-          <a class="teacher-link" href="https://work.weixin.qq.com/ca/cawcde5f657b767c07" target="_blank" rel="noopener noreferrer">点击联系老师</a>
+          <h3>下一步：领取老师人工解读</h3>
+          <p>请所有做完测评报告的同学，将本页报告完整截图发给你的老师。系统能判断阶段，但聊天记录里的语气、上一轮互动失误和第一句话方向，需要老师结合细节继续判断。</p>
+          <div class="next-step-grid">
+            <section>
+              <h4>老师可以重点帮你判断</h4>
+              <ul id="teacherHelpList"></ul>
+            </section>
+            <section>
+              <h4>建议截图这 4 部分</h4>
+              <ul>
+                <li>测评标题、窗口结果和分数</li>
+                <li>当前挽回流程与排斥度判断</li>
+                <li>复联工具适配和避坑提醒</li>
+                <li>7 天行动节奏与 AI 深度分析</li>
+              </ul>
+            </section>
+          </div>
+          <div class="message-template">
+            <strong>可以复制这句话发给老师：</strong>
+            <p id="teacherMessage">老师你好，我刚做完分手挽回测评，这是我的完整报告截图。我想请你帮我判断，我现在该断联、复联还是先止损，以及下一步第一句话怎么说。</p>
+            <button type="button" id="copyTeacherMessage" class="secondary small-button">复制开场白</button>
+          </div>
+          <a class="teacher-link" href="https://work.weixin.qq.com/ca/cawcde5f657b767c07" target="_blank" rel="noopener noreferrer">发送报告给老师，领取人工解读</a>
         </article>
         <article class="ai-card full">
           <h3>AI 深度分析</h3>
@@ -517,6 +537,19 @@
       </p>
     </section>
   </main>
+
+  <div id="followupPrompt" class="followup-prompt hidden" role="dialog" aria-modal="true" aria-labelledby="followupTitle">
+    <div class="followup-card">
+      <button type="button" id="closeFollowup" class="icon-close" aria-label="关闭">×</button>
+      <p class="eyebrow">报告已生成</p>
+      <h2 id="followupTitle">下一步别急着乱操作</h2>
+      <p>如果你不确定现在该不该联系对方，建议先把完整报告截图发给老师。很多挽回失败不是没机会，而是第一步又做错了。</p>
+      <div class="followup-actions">
+        <button type="button" id="screenshotFirst" class="secondary">我先截图</button>
+        <a class="teacher-link" href="https://work.weixin.qq.com/ca/cawcde5f657b767c07" target="_blank" rel="noopener noreferrer">联系老师解读</a>
+      </div>
+    </div>
+  </div>
 
   <script src="./app.js"></script>
 </body>

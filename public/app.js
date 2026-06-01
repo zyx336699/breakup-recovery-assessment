@@ -26,6 +26,12 @@ const analysisFill = document.querySelector("#analysisFill");
 const analysisSteps = document.querySelector("#analysisSteps");
 const aiAnalyzeButton = document.querySelector("#aiAnalyze");
 const aiOutput = document.querySelector("#aiOutput");
+const teacherHelpList = document.querySelector("#teacherHelpList");
+const teacherMessage = document.querySelector("#teacherMessage");
+const copyTeacherMessage = document.querySelector("#copyTeacherMessage");
+const followupPrompt = document.querySelector("#followupPrompt");
+const closeFollowup = document.querySelector("#closeFollowup");
+const screenshotFirst = document.querySelector("#screenshotFirst");
 
 const maxScore = 111;
 const fieldGroups = {
@@ -655,6 +661,48 @@ function buildSocialDisplay(data, redFlags) {
   return items;
 }
 
+function buildTeacherHelp(data, redFlags, score) {
+  if (redFlags.length || Number(data.get("behavior")) < 0 || Number(data.get("stability")) < 0) {
+    return [
+      "现在是否必须完全暂停联系，避免继续升级风险。",
+      "如果已经造成伤害，该如何做边界声明和后果承担。",
+      "后续什么时候才适合重新评估低压修复空间。"
+    ];
+  }
+
+  const contactStatus = Number(data.get("contactStatus"));
+  const attitude = Number(data.get("attitude"));
+  const behavior = Number(data.get("behavior"));
+  const newPartner = Number(data.get("newPartner"));
+  const items = [];
+
+  items.push(contactStatus <= 2 || attitude <= 2
+    ? "你现在该不该主动联系，还是先抽离降压。"
+    : "你现在能不能从轻话题进入低压复联。");
+
+  items.push(behavior <= 1
+    ? "前面发过的消息有没有继续扣分，下一条该怎么止损。"
+    : "第一句话怎么发，才不会把轻松聊天变成复合谈判。");
+
+  items.push(score >= 84
+    ? "如果对方回应变好，什么时候可以提出见面或认真沟通。"
+    : "对方冷淡回复时，该继续聊、换话题，还是及时撤退。");
+
+  if (newPartner <= 1) {
+    items.push("出现新关系变量时，怎么保留长期窗口而不是站到对立面。");
+  }
+
+  items.push("你的报告结果和最近 3-5 张聊天截图是否一致，下一步是否需要微调。");
+  return items;
+}
+
+function buildTeacherMessage(data, redFlags, score, report) {
+  const breakupType = selectedText(data, "breakupType").split("：")[0] || "当前分手类型";
+  const contactStatus = selectedText(data, "contactStatus").split("，")[0] || "当前联系状态";
+  const redFlagText = redFlags.length ? "报告里有红线/高压风险提示，" : "";
+  return `老师你好，我刚做完分手挽回测评，这是我的完整报告截图。系统判断我是「${report.title}」，分数是 ${score}/${maxScore}，分手类型偏「${breakupType}」，目前联系状态是「${contactStatus}」。${redFlagText}我想请你帮我判断：我现在该断联、复联还是先止损，以及下一步第一句话怎么说。`;
+}
+
 function buildSevenDayPlan(data, redFlags) {
   if (redFlags.length) {
     return [
@@ -753,6 +801,8 @@ function renderReport(data, score, redFlags) {
   listItems(planList, buildSevenDayPlan(data, redFlags));
   listItems(maintenanceList, maintenance);
   listItems(sourceList, sourceNotes);
+  listItems(teacherHelpList, buildTeacherHelp(data, redFlags, score));
+  teacherMessage.textContent = buildTeacherMessage(data, redFlags, score, report);
   scriptAdvice.textContent = report.script;
   latestReportPayload = buildPayload(data, score, redFlags, report, contextual);
   trackEvent("assessment", {
@@ -771,6 +821,9 @@ function renderReport(data, score, redFlags) {
   calculateButton.disabled = false;
   calculateButton.textContent = "重新生成测评报告";
   result.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => {
+    followupPrompt?.classList.remove("hidden");
+  }, 700);
 }
 
 function getAttribution() {
@@ -866,7 +919,7 @@ async function runAiAnalysis() {
     if (!response.ok) {
       throw new Error(data.error || "AI 分析失败");
     }
-    aiOutput.textContent = data.analysis;
+    aiOutput.textContent = `${data.analysis}\n\n下一步建议：AI 可以帮你整理方向，但聊天记录里的语气、对方真实防御程度和第一句话细节，仍建议把本报告和最近 3-5 张聊天截图一起发给老师人工判断。`;
   } catch (error) {
     aiOutput.textContent = `${error.message}。如果你还没配置 DeepSeek key，请在本地 .env.local 中设置 DEEPSEEK_API_KEY 后重启服务。`;
   } finally {
@@ -890,12 +943,32 @@ form.addEventListener("reset", () => {
     analysisFill.style.width = "0%";
     analysisPercent.textContent = "0%";
     result.classList.add("hidden");
+    followupPrompt?.classList.add("hidden");
     calculateButton.disabled = false;
     calculateButton.textContent = "生成测评报告";
   }, 0);
 });
 calculateButton.addEventListener("click", startReportGeneration);
 aiAnalyzeButton?.addEventListener("click", runAiAnalysis);
+closeFollowup?.addEventListener("click", () => followupPrompt.classList.add("hidden"));
+screenshotFirst?.addEventListener("click", () => followupPrompt.classList.add("hidden"));
+followupPrompt?.addEventListener("click", (event) => {
+  if (event.target === followupPrompt) {
+    followupPrompt.classList.add("hidden");
+  }
+});
+copyTeacherMessage?.addEventListener("click", async () => {
+  const text = teacherMessage?.textContent || "";
+  try {
+    await navigator.clipboard.writeText(text);
+    copyTeacherMessage.textContent = "已复制";
+  } catch {
+    copyTeacherMessage.textContent = "请长按复制";
+  }
+  window.setTimeout(() => {
+    copyTeacherMessage.textContent = "复制开场白";
+  }, 1600);
+});
 
 if (!visitTracked) {
   visitTracked = true;
