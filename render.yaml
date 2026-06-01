@@ -20,3 +20,5 @@ services:
         sync: false
       - key: DATABASE_SSL
         value: "true"
+      - key: APP_TIMEZONE
+        value: Asia/Shanghai

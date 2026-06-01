@@ -18,6 +18,7 @@ const aiRequests = new Map();
 const dataDir = path.join(__dirname, "data");
 const statsPath = path.join(dataDir, "stats.json");
 const databaseUrl = process.env.DATABASE_URL || "";
+const appTimeZone = process.env.APP_TIMEZONE || "Asia/Shanghai";
 const pool = databaseUrl
   ? new Pool({
       connectionString: databaseUrl,
@@ -25,6 +26,25 @@ const pool = databaseUrl
     })
   : null;
 let dbReady = false;
+
+const adminDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: appTimeZone,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit"
+});
+
+const adminDateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: appTimeZone,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  hourCycle: "h23"
+});
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -68,6 +88,22 @@ function saveStats(stats) {
 
 function compactText(value, max = 120) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function formatParts(formatter, value = new Date()) {
+  return Object.fromEntries(
+    formatter.formatToParts(new Date(value)).map((part) => [part.type, part.value])
+  );
+}
+
+function localDateKey(value = new Date()) {
+  const parts = formatParts(adminDateFormatter, value);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function formatAdminTime(value) {
+  const parts = formatParts(adminDateTimeFormatter, value);
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
 }
 
 function getBasic(req, key) {
@@ -330,8 +366,8 @@ function escapeHtml(value) {
 
 async function adminPage() {
   const stats = await getAnalytics();
-  const today = new Date().toISOString().slice(0, 10);
-  const todayEvents = stats.events.filter((event) => event.time.slice(0, 10) === today);
+  const today = localDateKey();
+  const todayEvents = stats.events.filter((event) => localDateKey(event.time) === today);
   const todayVisits = todayEvents.filter((event) => event.type === "visit").length;
   const todayAssessments = todayEvents.filter((event) => event.type === "assessment").length;
   const todayAi = todayEvents.filter((event) => event.type === "ai").length;
@@ -340,7 +376,7 @@ async function adminPage() {
   const assessmentEvents = stats.events.filter((event) => event.type === "assessment");
   const rows = stats.events.slice(-80).reverse().map((event) => `
     <tr>
-      <td>${escapeHtml(event.time.replace("T", " ").slice(0, 19))}</td>
+      <td>${escapeHtml(formatAdminTime(event.time))}</td>
       <td>${escapeHtml(event.type)}</td>
       <td>${escapeHtml(event.stage || event.window || "")}</td>
       <td>${escapeHtml(event.score || "")}</td>
@@ -350,7 +386,7 @@ async function adminPage() {
   `).join("");
   const studentRows = assessmentEvents.slice(-80).reverse().map((event) => `
     <tr>
-      <td>${escapeHtml(event.time.replace("T", " ").slice(0, 19))}</td>
+      <td>${escapeHtml(formatAdminTime(event.time))}</td>
       <td>${escapeHtml(event.userGender)}</td>
       <td>${escapeHtml(event.targetGender)}</td>
       <td>${escapeHtml(event.age)}</td>
@@ -366,6 +402,7 @@ async function adminPage() {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="30">
   <title>分手挽回自测评估系统 - 后台</title>
   <style>
     *{box-sizing:border-box}body{margin:0;background:#f4f0ea;color:#1d2526;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif}.wrap{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:34px 0 60px}h1{margin:0 0 8px;font-size:34px}.muted{color:#697170;margin:0 0 22px}.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:24px}.card{padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;box-shadow:0 16px 42px rgba(53,45,34,.1)}.card span{display:block;color:#697170;font-weight:700}.card strong{display:block;margin-top:8px;color:#1e5b54;font-size:34px;line-height:1}.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}.section{margin-bottom:16px;padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:10px;border-bottom:1px solid #e6ded3;text-align:left;font-size:14px;vertical-align:top}th{color:#1e5b54}.mini-table{min-width:0}.mini-table td:last-child{width:80px;font-weight:800;color:#1e5b54}.badge{display:inline-block;margin-left:8px;padding:3px 8px;border-radius:99px;background:#e5f1ed;color:#1e5b54;font-size:12px;font-weight:800}a{color:#1e5b54;font-weight:700}@media(max-width:900px){.cards,.dashboard-grid{grid-template-columns:1fr}table{min-width:760px}}
@@ -373,6 +410,7 @@ async function adminPage() {
 </head>
 <body>
   <main class="wrap">
+    <p class="muted"><span class="badge">Asia/Shanghai</span><span class="badge">30s auto refresh</span></p>
     <h1>专属后台</h1>
     <p class="muted">这里只统计访问、测评和基础画像，不保存用户填写的详细自述文本。<span class="badge">${stats.storage === "database" ? "数据库存储" : "本地文件存储"}</span></p>
     <div class="cards">
