@@ -29,6 +29,8 @@ const aiOutput = document.querySelector("#aiOutput");
 const teacherHelpList = document.querySelector("#teacherHelpList");
 const teacherMessage = document.querySelector("#teacherMessage");
 const copyTeacherMessage = document.querySelector("#copyTeacherMessage");
+const copyReportPackage = document.querySelector("#copyReportPackage");
+const captureStatus = document.querySelector("#captureStatus");
 const followupPrompt = document.querySelector("#followupPrompt");
 const closeFollowup = document.querySelector("#closeFollowup");
 const screenshotFirst = document.querySelector("#screenshotFirst");
@@ -71,6 +73,7 @@ const scoredFields = [
 ];
 let latestReportPayload = null;
 let latestFormData = null;
+let latestReportImageBlob = null;
 let visitTracked = false;
 let analysisTimer = null;
 
@@ -822,10 +825,93 @@ function renderReport(data, score, redFlags) {
   analysisProcess.classList.add("hidden");
   calculateButton.disabled = false;
   calculateButton.textContent = "重新生成测评报告";
+  prepareReportImage();
   result.scrollIntoView({ behavior: "smooth", block: "start" });
   window.setTimeout(() => {
     followupPrompt?.classList.remove("hidden");
   }, 700);
+}
+
+async function prepareReportImage() {
+  latestReportImageBlob = null;
+  if (captureStatus) captureStatus.textContent = "报告图片正在生成";
+  if (copyReportPackage) {
+    copyReportPackage.disabled = true;
+    copyReportPackage.textContent = "报告图生成中";
+  }
+
+  if (!window.html2canvas) {
+    if (captureStatus) captureStatus.textContent = "截图组件加载失败，可先复制开场白";
+    if (copyReportPackage) {
+      copyReportPackage.disabled = false;
+      copyReportPackage.textContent = "复制开场白+报告图";
+    }
+    return;
+  }
+
+  try {
+    await new Promise((resolve) => window.setTimeout(resolve, 260));
+    const canvas = await window.html2canvas(result, {
+      backgroundColor: "#fffaf3",
+      scale: Math.min(2, window.devicePixelRatio || 1),
+      useCORS: true,
+      ignoreElements: (element) => element.classList?.contains("capture-ignore")
+    });
+    latestReportImageBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.95));
+    if (!latestReportImageBlob) throw new Error("empty image");
+    if (captureStatus) captureStatus.textContent = "报告图片已生成，可一键复制给老师";
+  } catch {
+    if (captureStatus) captureStatus.textContent = "报告图片生成失败，可先复制开场白";
+  } finally {
+    if (copyReportPackage) {
+      copyReportPackage.disabled = false;
+      copyReportPackage.textContent = "复制开场白+报告图";
+    }
+  }
+}
+
+function downloadReportImage(blob) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "分手挽回测评报告.png";
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+}
+
+async function copyReportPackageToClipboard() {
+  const text = teacherMessage?.textContent || "";
+  if (!latestReportImageBlob) {
+    await prepareReportImage();
+  }
+
+  try {
+    if (!latestReportImageBlob || !navigator.clipboard || !window.ClipboardItem) {
+      throw new Error("image clipboard unsupported");
+    }
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/plain": new Blob([text], { type: "text/plain" }),
+        "image/png": latestReportImageBlob
+      })
+    ]);
+    copyReportPackage.textContent = "已复制文字和报告图";
+    if (captureStatus) captureStatus.textContent = "已复制，去老师对话框粘贴发送即可";
+  } catch {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (latestReportImageBlob) downloadReportImage(latestReportImageBlob);
+      copyReportPackage.textContent = "已复制文字，报告图已下载";
+      if (captureStatus) captureStatus.textContent = "当前浏览器不支持同时复制图片，已下载报告图";
+    } catch {
+      copyReportPackage.textContent = "复制失败，请长按文字复制";
+      if (captureStatus) captureStatus.textContent = "请长按复制开场白，或手动保存报告图";
+    }
+  }
+
+  window.setTimeout(() => {
+    copyReportPackage.textContent = "复制开场白+报告图";
+  }, 2200);
 }
 
 function getAttribution() {
@@ -954,6 +1040,8 @@ form.addEventListener("reset", () => {
     followupPrompt?.classList.add("hidden");
     latestReportPayload = null;
     latestFormData = null;
+    latestReportImageBlob = null;
+    if (captureStatus) captureStatus.textContent = "报告图片正在生成";
     calculateButton.disabled = false;
     calculateButton.textContent = "生成测评报告";
   }, 0);
@@ -979,6 +1067,7 @@ copyTeacherMessage?.addEventListener("click", async () => {
     copyTeacherMessage.textContent = "复制开场白";
   }, 1600);
 });
+copyReportPackage?.addEventListener("click", copyReportPackageToClipboard);
 
 document.querySelectorAll(".teacher-link").forEach((link) => {
   link.addEventListener("click", () => {

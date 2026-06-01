@@ -499,9 +499,11 @@
           <div class="message-template">
             <strong>可以复制这句话发给老师：</strong>
             <p id="teacherMessage">老师你好，我刚做完分手挽回测评，这是我的完整报告截图。我想请你帮我判断，我现在该断联、复联还是先止损，以及下一步第一句话怎么说。</p>
-            <button type="button" id="copyTeacherMessage" class="secondary small-button">复制开场白</button>
+            <button type="button" id="copyTeacherMessage" class="secondary small-button capture-ignore">复制开场白</button>
+            <button type="button" id="copyReportPackage" class="secondary small-button capture-ignore">复制开场白+报告图</button>
+            <span id="captureStatus" class="capture-status">报告图片正在生成</span>
           </div>
-          <a class="teacher-link" href="https://work.weixin.qq.com/ca/cawcde5f657b767c07" target="_blank" rel="noopener noreferrer">发送报告给老师，领取人工解读</a>
+          <a class="teacher-link capture-ignore" href="https://work.weixin.qq.com/ca/cawcde5f657b767c07" target="_blank" rel="noopener noreferrer">发送报告给老师，领取人工解读</a>
         </article>
         <article class="ai-card full">
           <h3>AI 深度分析</h3>
@@ -546,11 +548,12 @@
       <p>如果你不确定现在该不该联系对方，建议先把完整报告截图发给老师。很多挽回失败不是没机会，而是第一步又做错了。</p>
       <div class="followup-actions">
         <button type="button" id="screenshotFirst" class="secondary">我先截图</button>
-        <a class="teacher-link" href="https://work.weixin.qq.com/ca/cawcde5f657b767c07" target="_blank" rel="noopener noreferrer">联系老师解读</a>
+        <a class="teacher-link capture-ignore" href="https://work.weixin.qq.com/ca/cawcde5f657b767c07" target="_blank" rel="noopener noreferrer">联系老师解读</a>
       </div>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

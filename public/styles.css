@@ -366,6 +366,16 @@ button:hover {
   display: none;
 }
 
+.capture-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  margin-left: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .result-top {
   display: flex;
   justify-content: space-between;
