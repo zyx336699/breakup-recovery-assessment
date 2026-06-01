@@ -70,6 +70,7 @@ const scoredFields = [
   "dailyTime"
 ];
 let latestReportPayload = null;
+let latestFormData = null;
 let visitTracked = false;
 let analysisTimer = null;
 
@@ -805,6 +806,7 @@ function renderReport(data, score, redFlags) {
   teacherMessage.textContent = buildTeacherMessage(data, redFlags, score, report);
   scriptAdvice.textContent = report.script;
   latestReportPayload = buildPayload(data, score, redFlags, report, contextual);
+  latestFormData = data;
   trackEvent("assessment", {
     stage: report.title,
     window: report.range,
@@ -836,10 +838,16 @@ function getAttribution() {
 }
 
 function trackEvent(type, extra = {}) {
+  const payload = JSON.stringify({ type, ...getAttribution(), ...extra });
+  if (navigator.sendBeacon) {
+    const sent = navigator.sendBeacon("/api/track", new Blob([payload], { type: "application/json" }));
+    if (sent) return;
+  }
   fetch("/api/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, ...getAttribution(), ...extra })
+    body: payload,
+    keepalive: true
   }).catch(() => {});
 }
 
@@ -944,6 +952,8 @@ form.addEventListener("reset", () => {
     analysisPercent.textContent = "0%";
     result.classList.add("hidden");
     followupPrompt?.classList.add("hidden");
+    latestReportPayload = null;
+    latestFormData = null;
     calculateButton.disabled = false;
     calculateButton.textContent = "生成测评报告";
   }, 0);
@@ -968,6 +978,18 @@ copyTeacherMessage?.addEventListener("click", async () => {
   window.setTimeout(() => {
     copyTeacherMessage.textContent = "复制开场白";
   }, 1600);
+});
+
+document.querySelectorAll(".teacher-link").forEach((link) => {
+  link.addEventListener("click", () => {
+    const report = latestReportPayload || {};
+    trackEvent("teacher_contact", {
+      stage: report.stage || resultTitle?.textContent || "",
+      window: report.window || probability?.textContent || "",
+      score: report.score ? `${report.score}/${report.maxScore || maxScore}` : "",
+      basicInfo: latestFormData ? buildBasicInfo(latestFormData) : undefined
+    });
+  });
 });
 
 if (!visitTracked) {

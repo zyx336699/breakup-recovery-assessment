@@ -75,6 +75,7 @@ function loadStats() {
       visits: 0,
       assessments: 0,
       aiAnalyses: 0,
+      teacherContacts: 0,
       events: []
     };
   }
@@ -198,6 +199,7 @@ async function recordEvent(type, req, extra = {}) {
   if (type === "visit") stats.visits += 1;
   if (type === "assessment") stats.assessments += 1;
   if (type === "ai") stats.aiAnalyses += 1;
+  if (type === "teacher_contact") stats.teacherContacts = Number(stats.teacherContacts || 0) + 1;
   stats.events.push(event);
   saveStats(stats);
 }
@@ -316,7 +318,8 @@ async function getAnalytics() {
         SELECT
           COUNT(*) FILTER (WHERE type='visit')::int AS visits,
           COUNT(*) FILTER (WHERE type='assessment')::int AS assessments,
-          COUNT(*) FILTER (WHERE type='ai')::int AS ai_analyses
+          COUNT(*) FILTER (WHERE type='ai')::int AS ai_analyses,
+          COUNT(*) FILTER (WHERE type='teacher_contact')::int AS teacher_contacts
         FROM analytics_events
       `);
       const eventsResult = await pool.query("SELECT * FROM analytics_events ORDER BY time DESC LIMIT 500");
@@ -326,6 +329,7 @@ async function getAnalytics() {
         visits: Number(stats.visits || 0),
         assessments: Number(stats.assessments || 0),
         aiAnalyses: Number(stats.ai_analyses || 0),
+        teacherContacts: Number(stats.teacher_contacts || 0),
         events: eventsResult.rows.map(normalizeDbEvent).reverse()
       };
     } catch (error) {
@@ -333,9 +337,14 @@ async function getAnalytics() {
     }
   }
 
+  const fileStats = loadStats();
   return {
     storage: "file",
-    ...loadStats()
+    visits: Number(fileStats.visits || 0),
+    assessments: Number(fileStats.assessments || 0),
+    aiAnalyses: Number(fileStats.aiAnalyses || 0),
+    teacherContacts: Number(fileStats.teacherContacts || 0),
+    events: fileStats.events || []
   };
 }
 
@@ -371,8 +380,10 @@ async function adminPage() {
   const todayVisits = todayEvents.filter((event) => event.type === "visit").length;
   const todayAssessments = todayEvents.filter((event) => event.type === "assessment").length;
   const todayAi = todayEvents.filter((event) => event.type === "ai").length;
+  const todayTeacherContacts = todayEvents.filter((event) => event.type === "teacher_contact").length;
   const conversionRate = percent(stats.assessments, stats.visits);
   const aiUsageRate = percent(stats.aiAnalyses, stats.assessments);
+  const teacherContactRate = percent(stats.teacherContacts, stats.assessments);
   const assessmentEvents = stats.events.filter((event) => event.type === "assessment");
   const rows = stats.events.slice(-80).reverse().map((event) => `
     <tr>
@@ -405,7 +416,7 @@ async function adminPage() {
   <meta http-equiv="refresh" content="30">
   <title>分手挽回自测评估系统 - 后台</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;background:#f4f0ea;color:#1d2526;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif}.wrap{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:34px 0 60px}h1{margin:0 0 8px;font-size:34px}.muted{color:#697170;margin:0 0 22px}.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:24px}.card{padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;box-shadow:0 16px 42px rgba(53,45,34,.1)}.card span{display:block;color:#697170;font-weight:700}.card strong{display:block;margin-top:8px;color:#1e5b54;font-size:34px;line-height:1}.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}.section{margin-bottom:16px;padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:10px;border-bottom:1px solid #e6ded3;text-align:left;font-size:14px;vertical-align:top}th{color:#1e5b54}.mini-table{min-width:0}.mini-table td:last-child{width:80px;font-weight:800;color:#1e5b54}.badge{display:inline-block;margin-left:8px;padding:3px 8px;border-radius:99px;background:#e5f1ed;color:#1e5b54;font-size:12px;font-weight:800}a{color:#1e5b54;font-weight:700}@media(max-width:900px){.cards,.dashboard-grid{grid-template-columns:1fr}table{min-width:760px}}
+    *{box-sizing:border-box}body{margin:0;background:#f4f0ea;color:#1d2526;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif}.wrap{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:34px 0 60px}h1{margin:0 0 8px;font-size:34px}.muted{color:#697170;margin:0 0 22px}.cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin-bottom:24px}.card{padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;box-shadow:0 16px 42px rgba(53,45,34,.1)}.card span{display:block;color:#697170;font-weight:700}.card strong{display:block;margin-top:8px;color:#1e5b54;font-size:34px;line-height:1}.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}.section{margin-bottom:16px;padding:20px;border:1px solid #d9d1c5;border-radius:8px;background:#fffaf3;overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:10px;border-bottom:1px solid #e6ded3;text-align:left;font-size:14px;vertical-align:top}th{color:#1e5b54}.mini-table{min-width:0}.mini-table td:last-child{width:80px;font-weight:800;color:#1e5b54}.badge{display:inline-block;margin-left:8px;padding:3px 8px;border-radius:99px;background:#e5f1ed;color:#1e5b54;font-size:12px;font-weight:800}a{color:#1e5b54;font-weight:700}@media(max-width:1100px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:900px){.cards,.dashboard-grid{grid-template-columns:1fr}table{min-width:760px}}
   </style>
 </head>
 <body>
@@ -419,6 +430,7 @@ async function adminPage() {
       <div class="card"><span>AI 分析次数</span><strong>${stats.aiAnalyses}</strong><small>今日 ${todayAi}</small></div>
       <div class="card"><span>测评转化率</span><strong>${conversionRate}</strong><small>测评 / 访问</small></div>
       <div class="card"><span>AI 使用率</span><strong>${aiUsageRate}</strong><small>AI / 测评</small></div>
+      <div class="card"><span>联系老师点击率</span><strong>${teacherContactRate}</strong><small>${stats.teacherContacts || 0} 次，今日 ${todayTeacherContacts}</small></div>
     </div>
     <div class="dashboard-grid">
       ${renderDistribution("测评结果分布", countBy(assessmentEvents, "stage"))}
@@ -497,7 +509,7 @@ app.use((req, res, next) => {
 
 app.post("/api/track", async (req, res) => {
   const type = req.body?.type;
-  if (!["visit", "assessment"].includes(type)) {
+  if (!["visit", "assessment", "teacher_contact"].includes(type)) {
     res.status(400).json({ error: "无效统计类型" });
     return;
   }
