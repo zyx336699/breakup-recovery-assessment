@@ -460,16 +460,11 @@ async function adminPage() {
 }
 
 app.get("/login", (req, res) => {
-  res.type("html").send(loginPage());
+  res.redirect("/");
 });
 
 app.post("/access", express.urlencoded({ extended: false }), (req, res) => {
-  if (!accessCode || req.body.code === accessCode) {
-    res.setHeader("Set-Cookie", `${cookieName}=${encodeURIComponent(cookieToken)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800`);
-    res.redirect("/");
-    return;
-  }
-  res.status(401).type("html").send(loginPage("口令不正确，请重新输入。"));
+  res.redirect("/");
 });
 
 app.get("/admin", async (req, res) => {
@@ -498,18 +493,7 @@ app.post("/admin/login", express.urlencoded({ extended: false }), (req, res) => 
 });
 
 app.use((req, res, next) => {
-  if (
-    req.path === "/robots.txt" ||
-    req.path === "/favicon.ico" ||
-    req.path === "/g2rBn6iFZI.txt" ||
-    req.path.startsWith("/admin")
-  ) return next();
-  if (hasAccess(req)) return next();
-  if (req.path.startsWith("/api/")) {
-    res.status(401).json({ error: "请先输入访问口令" });
-    return;
-  }
-  res.redirect("/login");
+  next();
 });
 
 app.post("/api/track", async (req, res) => {

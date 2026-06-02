@@ -10,12 +10,8 @@ async function selectScenario(page, values) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("http://localhost:8765/login");
-  const codeInput = page.locator("#code");
-  if (await codeInput.isVisible().catch(() => false)) {
-    await codeInput.fill("520520");
-    await page.getByRole("button", { name: "进入测评系统" }).click();
-  }
+  await page.goto(url);
+  await expect(page.getByRole("button", { name: "生成测评报告" })).toBeVisible();
 });
 
 test("high repair scenario produces a measured high-window report", async ({ page }) => {

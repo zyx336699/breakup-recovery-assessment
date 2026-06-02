@@ -10,8 +10,6 @@ services:
         value: deepseek-chat
       - key: DEEPSEEK_API_KEY
         sync: false
-      - key: SITE_ACCESS_CODE
-        sync: false
       - key: ACCESS_COOKIE_SECRET
         generateValue: true
       - key: ADMIN_PASSWORD

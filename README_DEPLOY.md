@@ -28,7 +28,6 @@ http://127.0.0.1:8765/index.html
 ```env
 DEEPSEEK_API_KEY=你的新版DeepSeekKey
 DEEPSEEK_MODEL=deepseek-chat
-SITE_ACCESS_CODE=设置一个给学员进入系统的口令
 ACCESS_COOKIE_SECRET=随便生成一串长一点的随机字符
 ADMIN_PASSWORD=设置你的后台口令
 DATABASE_URL=你的PostgreSQL数据库连接地址
@@ -59,7 +58,6 @@ npm start
 ```env
 DEEPSEEK_API_KEY=你的新版DeepSeekKey
 DEEPSEEK_MODEL=deepseek-chat
-SITE_ACCESS_CODE=你要发给学员的访问口令
 ACCESS_COOKIE_SECRET=一串随机字符
 ADMIN_PASSWORD=你的后台口令
 DATABASE_URL=你的PostgreSQL数据库连接地址
@@ -76,7 +74,7 @@ DATABASE_SSL=true
 2. 上传本项目里的这些内容：`public/`、`server.js`、`package.json`、`package-lock.json`、`.env.example`、`.gitignore`、`render.yaml`、`Procfile`。
 3. 不要上传 `.env.local`、`node_modules/`、`screenshots/`、`test-results/`。
 4. 到 Render 连接这个仓库并部署。
-5. 在 Render 的环境变量里填写新版 `DEEPSEEK_API_KEY`、`SITE_ACCESS_CODE`、`ACCESS_COOKIE_SECRET`、`ADMIN_PASSWORD`、`DATABASE_URL`。
+5. 在 Render 的环境变量里填写新版 `DEEPSEEK_API_KEY`、`ACCESS_COOKIE_SECRET`、`ADMIN_PASSWORD`、`DATABASE_URL`。
 6. 部署完成后，把 Render 给你的网址发给别人。
 
 ## 也可以部署到 Railway / Zeabur / VPS
@@ -93,7 +91,6 @@ npm start
 ```env
 DEEPSEEK_API_KEY
 DEEPSEEK_MODEL
-SITE_ACCESS_CODE
 ACCESS_COOKIE_SECRET
 ADMIN_PASSWORD
 DATABASE_URL
@@ -104,13 +101,12 @@ DATABASE_SSL
 
 这个版本已经做了基础保护：
 
-- 访问系统前需要输入口令。
 - DeepSeek key 和 AI 分析提示词只在后端，用户浏览器看不到。
 - AI 分析接口有简单限流，避免被大量刷接口。
 - 私有后台需要单独口令，普通用户无法查看访问和测评统计。
 - 后台统计优先写入 PostgreSQL 数据库，避免 Render 重启或重新部署后清零；未配置 `DATABASE_URL` 时会退回本地文件统计，仅适合测试。
 - 页面加了 `noindex` 和 `robots.txt`，降低被搜索引擎收录的概率。
-- `.env.local` 不会上传，避免泄露 key 和访问口令。
+- `.env.local` 不会上传，避免泄露 key 和后台口令。
 
 但要注意：任何公开网页都无法 100% 防复制。更强的保护方式是后续加手机号登录、学员账号、付费权限、报告水印、后台记录访问日志、绑定你自己的域名。
 
@@ -130,5 +126,4 @@ Procfile             通用 Web 进程配置
 - 用新版 DeepSeek key，不要用已经泄露过的 key。
 - 先自己用手机打开部署后的网址，完整跑一遍测评和 AI 深度分析。
 - 测评报告里已经加入提醒：让做完测评的同学把报告截图发给老师，方便老师结合聊天记录继续判断。
-- 不要把访问口令发到公开群里，建议只发给付费学员或内部学员。
 - 后台地址是 `/admin`，例如 `https://你的域名/admin`。
