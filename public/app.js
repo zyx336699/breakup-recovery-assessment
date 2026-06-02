@@ -38,6 +38,7 @@ const screenshotFirst = document.querySelector("#screenshotFirst");
 
 const maxScore = 111;
 const teacherContactUrl = "https://work.weixin.qq.com/ca/cawcde5f657b767c07";
+const douyinGroupUrl = "https://v.douyin.com/group/582208105630";
 const isDouyinMiniApp = new URLSearchParams(window.location.search).get("source") === "douyin_miniapp" ||
   /toutiaomicroapp|bytedance|douyin|aweme/i.test(navigator.userAgent || "");
 const fieldGroups = {
@@ -935,7 +936,9 @@ async function copyReportPackageToClipboard() {
 
 function teacherContactText() {
   const text = teacherMessage?.textContent || "";
-  return `${text}\n\n老师联系方式：${teacherContactUrl}`;
+  const link = isDouyinMiniApp ? douyinGroupUrl : teacherContactUrl;
+  const label = isDouyinMiniApp ? "抖音粉丝群链接" : "老师联系方式";
+  return `${text}\n\n${label}：${link}`;
 }
 
 function postMiniAppMessage(payload) {
@@ -950,19 +953,20 @@ async function copyTeacherContactForMiniApp() {
   const text = teacherContactText();
   try {
     await navigator.clipboard.writeText(text);
-    if (captureStatus) captureStatus.textContent = "已复制开场白和老师链接，正在尝试打开微信";
+    if (captureStatus) captureStatus.textContent = "已复制开场白和粉丝群链接，正在尝试打开抖音群";
   } catch {
-    if (captureStatus) captureStatus.textContent = "正在尝试打开微信；如果失败，请长按复制老师链接";
+    if (captureStatus) captureStatus.textContent = "正在尝试打开抖音群；如果失败，请长按复制粉丝群链接";
   }
   postMiniAppMessage({ type: "copy_teacher_contact", text });
 }
 
 function openTeacherContact() {
-  postMiniAppMessage({ type: "open_teacher_contact", url: teacherContactUrl, text: teacherContactText() });
-  window.location.href = teacherContactUrl;
+  const url = isDouyinMiniApp ? douyinGroupUrl : teacherContactUrl;
+  postMiniAppMessage({ type: "open_teacher_contact", url, text: teacherContactText() });
+  window.location.href = url;
   window.setTimeout(() => {
     if (isDouyinMiniApp && captureStatus) {
-      captureStatus.textContent = "如果没有自动打开微信，请复制开场白和老师链接后到微信粘贴打开";
+      captureStatus.textContent = "如果没有自动打开粉丝群，请复制链接后在抖音中打开";
     }
   }, 1200);
 }
