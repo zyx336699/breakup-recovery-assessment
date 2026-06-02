@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "分手挽回自测",
+    "navigationBarBackgroundColor": "#fffaf3",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f0ea"
+  }
+}
