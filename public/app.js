@@ -38,7 +38,8 @@ const screenshotFirst = document.querySelector("#screenshotFirst");
 
 const maxScore = 111;
 const teacherContactUrl = "https://work.weixin.qq.com/ca/cawcde5f657b767c07";
-const douyinGroupUrl = "https://v.douyin.com/group/582208105630";
+const douyinGroupUrl = "https://www.iesdouyin.com/share/group/582208105630?schema_type=42&group_number=582208105630";
+const douyinGroupShortUrl = "https://v.douyin.com/group/582208105630";
 const isDouyinMiniApp = new URLSearchParams(window.location.search).get("source") === "douyin_miniapp" ||
   /toutiaomicroapp|bytedance|douyin|aweme/i.test(navigator.userAgent || "");
 const fieldGroups = {
@@ -936,7 +937,7 @@ async function copyReportPackageToClipboard() {
 
 function teacherContactText() {
   const text = teacherMessage?.textContent || "";
-  const link = isDouyinMiniApp ? douyinGroupUrl : teacherContactUrl;
+  const link = isDouyinMiniApp ? douyinGroupShortUrl : teacherContactUrl;
   const label = isDouyinMiniApp ? "抖音粉丝群链接" : "老师联系方式";
   return `${text}\n\n${label}：${link}`;
 }
