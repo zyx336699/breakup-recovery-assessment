@@ -31,11 +31,15 @@ const teacherMessage = document.querySelector("#teacherMessage");
 const copyTeacherMessage = document.querySelector("#copyTeacherMessage");
 const copyReportPackage = document.querySelector("#copyReportPackage");
 const captureStatus = document.querySelector("#captureStatus");
+const reportImagePreview = document.querySelector("#reportImagePreview");
 const followupPrompt = document.querySelector("#followupPrompt");
 const closeFollowup = document.querySelector("#closeFollowup");
 const screenshotFirst = document.querySelector("#screenshotFirst");
 
 const maxScore = 111;
+const teacherContactUrl = "https://work.weixin.qq.com/ca/cawcde5f657b767c07";
+const isDouyinMiniApp = new URLSearchParams(window.location.search).get("source") === "douyin_miniapp" ||
+  /toutiaomicroapp|bytedance|douyin|aweme/i.test(navigator.userAgent || "");
 const fieldGroups = {
   relation: ["relationshipStage", "duration", "quality", "cause", "breakupType", "proposer", "breakupCount", "livingBinding"],
   signal: ["attitude", "newPartner", "connection", "contactStatus", "specialScenario", "offlineMeet"],
@@ -818,7 +822,9 @@ function renderReport(data, score, redFlags) {
     basicInfo: buildBasicInfo(data)
   });
   if (aiOutput) {
-    aiOutput.textContent = "基础报告已生成。你可以点击“生成 AI 深度分析”，获得更细的挽回节奏和沟通建议。";
+    aiOutput.textContent = isDouyinMiniApp
+      ? "基础报告已生成。抖音小程序预览中如果 AI 请求失败，请先确认后台已配置合法请求域名；网页正式版 AI 功能仍在。"
+      : "基础报告已生成。你可以点击“生成 AI 深度分析”，获得更细的挽回节奏和沟通建议。";
   }
 
   result.classList.remove("hidden");
@@ -834,6 +840,11 @@ function renderReport(data, score, redFlags) {
 
 async function prepareReportImage() {
   latestReportImageBlob = null;
+  reportImagePreview?.classList.add("hidden");
+  if (reportImagePreview?.src) {
+    URL.revokeObjectURL(reportImagePreview.src);
+    reportImagePreview.removeAttribute("src");
+  }
   if (captureStatus) captureStatus.textContent = "报告图片正在生成";
   if (copyReportPackage) {
     copyReportPackage.disabled = true;
@@ -859,7 +870,15 @@ async function prepareReportImage() {
     });
     latestReportImageBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.95));
     if (!latestReportImageBlob) throw new Error("empty image");
-    if (captureStatus) captureStatus.textContent = "报告图片已生成，可一键复制给老师";
+    if (reportImagePreview) {
+      reportImagePreview.src = URL.createObjectURL(latestReportImageBlob);
+      reportImagePreview.classList.remove("hidden");
+    }
+    if (captureStatus) {
+      captureStatus.textContent = isDouyinMiniApp
+        ? "报告图片已生成，可复制开场白并长按保存报告图"
+        : "报告图片已生成，可一键复制给老师";
+    }
   } catch {
     if (captureStatus) captureStatus.textContent = "报告图片生成失败，可先复制开场白";
   } finally {
@@ -912,6 +931,30 @@ async function copyReportPackageToClipboard() {
   window.setTimeout(() => {
     copyReportPackage.textContent = "复制开场白+报告图";
   }, 2200);
+}
+
+function teacherContactText() {
+  const text = teacherMessage?.textContent || "";
+  return `${text}\n\n老师联系方式：${teacherContactUrl}`;
+}
+
+function postMiniAppMessage(payload) {
+  try {
+    window.tt?.miniProgram?.postMessage?.({ data: payload });
+  } catch {
+    // Mini app bridge is optional in normal browsers.
+  }
+}
+
+async function copyTeacherContactForMiniApp() {
+  const text = teacherContactText();
+  try {
+    await navigator.clipboard.writeText(text);
+    if (captureStatus) captureStatus.textContent = "已复制开场白和老师链接，请到微信中粘贴打开";
+  } catch {
+    if (captureStatus) captureStatus.textContent = "请长按复制开场白和老师链接，再到微信打开";
+  }
+  postMiniAppMessage({ type: "copy_teacher_contact", text });
 }
 
 function getAttribution() {
@@ -1001,7 +1044,9 @@ async function runAiAnalysis() {
 
   aiAnalyzeButton.disabled = true;
   aiAnalyzeButton.textContent = "分析中...";
-  aiOutput.textContent = "AI 正在结合你的选项和自述生成更细的方案，请稍等。";
+  aiOutput.textContent = isDouyinMiniApp
+    ? "AI 正在生成。如果抖音预览环境拦截请求，稍后会提示你需要补充合法请求域名。"
+    : "AI 正在结合你的选项和自述生成更细的方案，请稍等。";
 
   try {
     const response = await fetch("/api/deepseek-analysis", {
@@ -1015,7 +1060,9 @@ async function runAiAnalysis() {
     }
     aiOutput.textContent = `${data.analysis}\n\n下一步建议：AI 可以帮你整理方向，但聊天记录里的语气、对方真实防御程度和第一句话细节，仍建议把本报告和最近 3-5 张聊天截图一起发给老师人工判断。`;
   } catch (error) {
-    aiOutput.textContent = `${error.message}。如果你还没配置 DeepSeek key，请在本地 .env.local 中设置 DEEPSEEK_API_KEY 后重启服务。`;
+    aiOutput.textContent = isDouyinMiniApp
+      ? `${error.message}。如果只在抖音小程序预览中失败，请在抖音后台确认 request 合法域名也包含 breakup-recovery-assessment.onrender.com；如果网页端也失败，再检查 DeepSeek key。`
+      : `${error.message}。如果你还没配置 DeepSeek key，请在本地 .env.local 中设置 DEEPSEEK_API_KEY 后重启服务。`;
   } finally {
     aiAnalyzeButton.disabled = false;
     aiAnalyzeButton.textContent = "生成 AI 深度分析";
@@ -1056,10 +1103,10 @@ followupPrompt?.addEventListener("click", (event) => {
   }
 });
 copyTeacherMessage?.addEventListener("click", async () => {
-  const text = teacherMessage?.textContent || "";
+  const text = isDouyinMiniApp ? teacherContactText() : (teacherMessage?.textContent || "");
   try {
     await navigator.clipboard.writeText(text);
-    copyTeacherMessage.textContent = "已复制";
+    copyTeacherMessage.textContent = isDouyinMiniApp ? "已复制链接" : "已复制";
   } catch {
     copyTeacherMessage.textContent = "请长按复制";
   }
@@ -1070,7 +1117,11 @@ copyTeacherMessage?.addEventListener("click", async () => {
 copyReportPackage?.addEventListener("click", copyReportPackageToClipboard);
 
 document.querySelectorAll(".teacher-link").forEach((link) => {
-  link.addEventListener("click", () => {
+  link.addEventListener("click", (event) => {
+    if (isDouyinMiniApp) {
+      event.preventDefault();
+      copyTeacherContactForMiniApp();
+    }
     const report = latestReportPayload || {};
     trackEvent("teacher_contact", {
       stage: report.stage || resultTitle?.textContent || "",
