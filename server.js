@@ -498,7 +498,12 @@ app.post("/admin/login", express.urlencoded({ extended: false }), (req, res) => 
 });
 
 app.use((req, res, next) => {
-  if (req.path === "/robots.txt" || req.path === "/favicon.ico" || req.path.startsWith("/admin")) return next();
+  if (
+    req.path === "/robots.txt" ||
+    req.path === "/favicon.ico" ||
+    req.path === "/g2rBn6iFZI.txt" ||
+    req.path.startsWith("/admin")
+  ) return next();
   if (hasAccess(req)) return next();
   if (req.path.startsWith("/api/")) {
     res.status(401).json({ error: "请先输入访问口令" });
