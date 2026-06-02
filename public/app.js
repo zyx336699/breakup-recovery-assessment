@@ -950,11 +950,21 @@ async function copyTeacherContactForMiniApp() {
   const text = teacherContactText();
   try {
     await navigator.clipboard.writeText(text);
-    if (captureStatus) captureStatus.textContent = "已复制开场白和老师链接，请到微信中粘贴打开";
+    if (captureStatus) captureStatus.textContent = "已复制开场白和老师链接，正在尝试打开微信";
   } catch {
-    if (captureStatus) captureStatus.textContent = "请长按复制开场白和老师链接，再到微信打开";
+    if (captureStatus) captureStatus.textContent = "正在尝试打开微信；如果失败，请长按复制老师链接";
   }
   postMiniAppMessage({ type: "copy_teacher_contact", text });
+}
+
+function openTeacherContact() {
+  postMiniAppMessage({ type: "open_teacher_contact", url: teacherContactUrl, text: teacherContactText() });
+  window.location.href = teacherContactUrl;
+  window.setTimeout(() => {
+    if (isDouyinMiniApp && captureStatus) {
+      captureStatus.textContent = "如果没有自动打开微信，请复制开场白和老师链接后到微信粘贴打开";
+    }
+  }, 1200);
 }
 
 function getAttribution() {
@@ -1121,6 +1131,7 @@ document.querySelectorAll(".teacher-link").forEach((link) => {
     if (isDouyinMiniApp) {
       event.preventDefault();
       copyTeacherContactForMiniApp();
+      openTeacherContact();
     }
     const report = latestReportPayload || {};
     trackEvent("teacher_contact", {
