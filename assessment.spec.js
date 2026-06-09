@@ -122,9 +122,13 @@ test("mobile layout keeps primary controls visible", async ({ page }) => {
 
 test("Douyin miniapp keeps report sharing but hides teacher contact entry", async ({ page }) => {
   await page.goto(`${url}?source=douyin_miniapp&utm_source=douyin_miniapp`);
-  await expect(page.locator("#reportFollowupTitle")).toContainText("报告已生成，请保存报告图");
+  await expect(page.locator("#reportFollowupTitle")).toContainText("将报告图发给老师，领取专业人工解读");
   await expect(page.locator("#reportFollowupText")).toContainText("将报告发给你的老师");
   await expect(page.locator("#copyReportPackage")).toContainText("查看并保存报告图");
+  await expect(page.locator("#followupTitle")).toBeHidden();
+  await expect(page.locator("#followupText")).toBeHidden();
+  await expect(page.locator("#closeFollowup")).toBeHidden();
+  await expect(page.locator("#screenshotFirst")).toContainText("保存报告图");
   await expect(page.locator("#copyTeacherMessage")).toBeHidden();
   await expect(page.getByRole("link", { name: "发送报告给老师，领取人工解读" })).toBeHidden();
   await expect(page.getByRole("link", { name: "联系老师解读" })).toBeHidden();

@@ -39,6 +39,7 @@ const teacherMessageLabel = document.querySelector("#teacherMessageLabel");
 const followupPrompt = document.querySelector("#followupPrompt");
 const followupTitle = document.querySelector("#followupTitle");
 const followupText = document.querySelector("#followupText");
+const followupEyebrow = followupPrompt?.querySelector(".eyebrow");
 const closeFollowup = document.querySelector("#closeFollowup");
 const screenshotFirst = document.querySelector("#screenshotFirst");
 
@@ -99,14 +100,16 @@ function applyMiniAppPresentation() {
   teacherMessage?.classList.add("hidden");
   copyTeacherMessage?.classList.add("hidden");
 
-  if (reportFollowupTitle) reportFollowupTitle.textContent = "报告已生成，请保存报告图";
+  if (reportFollowupTitle) reportFollowupTitle.textContent = "将报告图发给老师，领取专业人工解读";
   if (reportFollowupText) {
-    reportFollowupText.textContent = "系统已自动生成你的测评报告图。请保存完整报告，并将报告发给你的老师，方便老师结合你的实际情况继续判断。";
+    reportFollowupText.textContent = "请保存系统自动生成的完整报告图，并将报告发给你的老师，方便老师结合你的实际情况继续判断。";
   }
   if (copyReportPackage) copyReportPackage.textContent = "查看并保存报告图";
-  if (followupTitle) followupTitle.textContent = "报告已生成，请先保存";
-  if (followupText) followupText.textContent = "系统已经自动生成报告图。请保存完整报告，并将报告发给你的老师。";
-  if (screenshotFirst) screenshotFirst.textContent = "查看报告图";
+  followupEyebrow?.classList.add("hidden");
+  followupTitle?.classList.add("hidden");
+  followupText?.classList.add("hidden");
+  closeFollowup?.classList.add("hidden");
+  if (screenshotFirst) screenshotFirst.textContent = "保存报告图";
 }
 
 applyMiniAppPresentation();
@@ -1160,9 +1163,12 @@ form.addEventListener("reset", () => {
 calculateButton.addEventListener("click", startReportGeneration);
 aiAnalyzeButton?.addEventListener("click", runAiAnalysis);
 closeFollowup?.addEventListener("click", () => followupPrompt.classList.add("hidden"));
-screenshotFirst?.addEventListener("click", () => {
+screenshotFirst?.addEventListener("click", async () => {
   followupPrompt.classList.add("hidden");
   if (isDouyinMiniApp) {
+    if (!latestReportImageBlob) await prepareReportImage();
+    if (latestReportImageBlob) downloadReportImage(latestReportImageBlob);
+    if (captureStatus) captureStatus.textContent = "报告图已准备好，请确认保存，并将报告发给老师";
     reportImagePreview?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 });

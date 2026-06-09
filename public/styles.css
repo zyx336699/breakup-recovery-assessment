@@ -626,6 +626,22 @@ li + li {
   margin-top: 18px;
 }
 
+.douyin-miniapp .followup-card {
+  width: min(360px, 100%);
+  padding: 16px;
+}
+
+.douyin-miniapp .followup-actions {
+  margin-top: 0;
+}
+
+.douyin-miniapp #screenshotFirst {
+  width: 100%;
+  min-height: 48px;
+  color: #fff;
+  background: var(--accent);
+}
+
 .ai-button {
   margin-bottom: 14px;
 }
