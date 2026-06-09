@@ -32,7 +32,13 @@ const copyTeacherMessage = document.querySelector("#copyTeacherMessage");
 const copyReportPackage = document.querySelector("#copyReportPackage");
 const captureStatus = document.querySelector("#captureStatus");
 const reportImagePreview = document.querySelector("#reportImagePreview");
+const reportFollowupTitle = document.querySelector("#reportFollowupTitle");
+const reportFollowupText = document.querySelector("#reportFollowupText");
+const teacherGuidanceGrid = document.querySelector("#teacherGuidanceGrid");
+const teacherMessageLabel = document.querySelector("#teacherMessageLabel");
 const followupPrompt = document.querySelector("#followupPrompt");
+const followupTitle = document.querySelector("#followupTitle");
+const followupText = document.querySelector("#followupText");
 const closeFollowup = document.querySelector("#closeFollowup");
 const screenshotFirst = document.querySelector("#screenshotFirst");
 
@@ -82,6 +88,28 @@ let latestFormData = null;
 let latestReportImageBlob = null;
 let visitTracked = false;
 let analysisTimer = null;
+
+function applyMiniAppPresentation() {
+  if (!isDouyinMiniApp) return;
+
+  document.documentElement.classList.add("douyin-miniapp");
+  document.querySelectorAll(".teacher-link").forEach((link) => link.classList.add("hidden"));
+  teacherGuidanceGrid?.classList.add("hidden");
+  teacherMessageLabel?.classList.add("hidden");
+  teacherMessage?.classList.add("hidden");
+  copyTeacherMessage?.classList.add("hidden");
+
+  if (reportFollowupTitle) reportFollowupTitle.textContent = "报告已生成，请保存报告图";
+  if (reportFollowupText) {
+    reportFollowupText.textContent = "系统已自动生成你的测评报告图。请保存完整报告，并将报告发给你的老师，方便老师结合你的实际情况继续判断。";
+  }
+  if (copyReportPackage) copyReportPackage.textContent = "查看并保存报告图";
+  if (followupTitle) followupTitle.textContent = "报告已生成，请先保存";
+  if (followupText) followupText.textContent = "系统已经自动生成报告图。请保存完整报告，并将报告发给你的老师。";
+  if (screenshotFirst) screenshotFirst.textContent = "查看报告图";
+}
+
+applyMiniAppPresentation();
 
 const stages = [
   {
@@ -854,10 +882,14 @@ async function prepareReportImage() {
   }
 
   if (!window.html2canvas) {
-    if (captureStatus) captureStatus.textContent = "截图组件加载失败，可先复制开场白";
+    if (captureStatus) {
+      captureStatus.textContent = isDouyinMiniApp
+        ? "报告图生成失败，请使用手机截图保存报告"
+        : "截图组件加载失败，可先复制开场白";
+    }
     if (copyReportPackage) {
       copyReportPackage.disabled = false;
-      copyReportPackage.textContent = "复制开场白+报告图";
+      copyReportPackage.textContent = isDouyinMiniApp ? "查看并保存报告图" : "复制开场白+报告图";
     }
     return;
   }
@@ -878,15 +910,19 @@ async function prepareReportImage() {
     }
     if (captureStatus) {
       captureStatus.textContent = isDouyinMiniApp
-        ? "报告图片已生成，可复制开场白并长按保存报告图"
+        ? "报告图片已生成，请长按报告图保存，并将报告发给老师"
         : "报告图片已生成，可一键复制给老师";
     }
   } catch {
-    if (captureStatus) captureStatus.textContent = "报告图片生成失败，可先复制开场白";
+    if (captureStatus) {
+      captureStatus.textContent = isDouyinMiniApp
+        ? "报告图片生成失败，请使用手机截图保存报告"
+        : "报告图片生成失败，可先复制开场白";
+    }
   } finally {
     if (copyReportPackage) {
       copyReportPackage.disabled = false;
-      copyReportPackage.textContent = "复制开场白+报告图";
+      copyReportPackage.textContent = isDouyinMiniApp ? "查看并保存报告图" : "复制开场白+报告图";
     }
   }
 }
@@ -901,6 +937,13 @@ function downloadReportImage(blob) {
 }
 
 async function copyReportPackageToClipboard() {
+  if (isDouyinMiniApp) {
+    if (!latestReportImageBlob) await prepareReportImage();
+    reportImagePreview?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (captureStatus) captureStatus.textContent = "请长按报告图保存，并将完整报告发给老师";
+    return;
+  }
+
   const text = teacherMessage?.textContent || "";
   if (!latestReportImageBlob) {
     await prepareReportImage();
@@ -931,7 +974,7 @@ async function copyReportPackageToClipboard() {
   }
 
   window.setTimeout(() => {
-    copyReportPackage.textContent = "复制开场白+报告图";
+    copyReportPackage.textContent = isDouyinMiniApp ? "查看并保存报告图" : "复制开场白+报告图";
   }, 2200);
 }
 
@@ -964,11 +1007,15 @@ async function copyTeacherContactForMiniApp() {
 function openTeacherContact() {
   const url = isDouyinMiniApp ? douyinGroupUrl : teacherContactUrl;
   postMiniAppMessage({ type: "open_teacher_contact", url, text: teacherContactText() });
+  if (isDouyinMiniApp) {
+    if (captureStatus) {
+      captureStatus.textContent = "抖音小程序不支持直接打开非业务域名，已复制粉丝群链接，请在抖音中打开";
+    }
+    return;
+  }
   window.location.href = url;
   window.setTimeout(() => {
-    if (isDouyinMiniApp && captureStatus) {
-      captureStatus.textContent = "如果没有自动打开粉丝群，请复制链接后在抖音中打开";
-    }
+    if (captureStatus) captureStatus.textContent = "如果没有自动打开，请复制链接后手动打开";
   }, 1200);
 }
 
@@ -1073,7 +1120,9 @@ async function runAiAnalysis() {
     if (!response.ok) {
       throw new Error(data.error || "AI 分析失败");
     }
-    aiOutput.textContent = `${data.analysis}\n\n下一步建议：AI 可以帮你整理方向，但聊天记录里的语气、对方真实防御程度和第一句话细节，仍建议把本报告和最近 3-5 张聊天截图一起发给老师人工判断。`;
+    aiOutput.textContent = isDouyinMiniApp
+      ? `${data.analysis}\n\n下一步建议：请保存本次测评报告，并将完整报告发给你的老师，方便老师结合实际情况继续判断。`
+      : `${data.analysis}\n\n下一步建议：AI 可以帮你整理方向，但聊天记录里的语气、对方真实防御程度和第一句话细节，仍建议把本报告和最近 3-5 张聊天截图一起发给老师人工判断。`;
   } catch (error) {
     aiOutput.textContent = isDouyinMiniApp
       ? `${error.message}。如果只在抖音小程序预览中失败，请在抖音后台确认 request 合法域名也包含 breakup-recovery-assessment.onrender.com；如果网页端也失败，再检查 DeepSeek key。`
@@ -1111,7 +1160,12 @@ form.addEventListener("reset", () => {
 calculateButton.addEventListener("click", startReportGeneration);
 aiAnalyzeButton?.addEventListener("click", runAiAnalysis);
 closeFollowup?.addEventListener("click", () => followupPrompt.classList.add("hidden"));
-screenshotFirst?.addEventListener("click", () => followupPrompt.classList.add("hidden"));
+screenshotFirst?.addEventListener("click", () => {
+  followupPrompt.classList.add("hidden");
+  if (isDouyinMiniApp) {
+    reportImagePreview?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+});
 followupPrompt?.addEventListener("click", (event) => {
   if (event.target === followupPrompt) {
     followupPrompt.classList.add("hidden");

@@ -120,6 +120,16 @@ test("mobile layout keeps primary controls visible", async ({ page }) => {
   await expect(page.getByRole("button", { name: "生成测评报告" })).toBeVisible();
 });
 
+test("Douyin miniapp keeps report sharing but hides teacher contact entry", async ({ page }) => {
+  await page.goto(`${url}?source=douyin_miniapp&utm_source=douyin_miniapp`);
+  await expect(page.locator("#reportFollowupTitle")).toContainText("报告已生成，请保存报告图");
+  await expect(page.locator("#reportFollowupText")).toContainText("将报告发给你的老师");
+  await expect(page.locator("#copyReportPackage")).toContainText("查看并保存报告图");
+  await expect(page.locator("#copyTeacherMessage")).toBeHidden();
+  await expect(page.getByRole("link", { name: "发送报告给老师，领取人工解读" })).toBeHidden();
+  await expect(page.getByRole("link", { name: "联系老师解读" })).toBeHidden();
+});
+
 test("admin dashboard requires login and shows stats", async ({ page }) => {
   await page.goto("http://localhost:8765/admin");
   await expect(page.getByRole("heading", { name: "专属后台" })).toBeVisible();
